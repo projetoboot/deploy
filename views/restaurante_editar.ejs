@@ -1,0 +1,201 @@
+<%- include('header', { title: 'Editar Restaurante' }) %>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4"><i class="fas fa-store"></i> Editar Restaurante</h2>
+            
+            <% if (success && success.length > 0) { %>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> <%= success[0] %>
+                </div>
+            <% } %>
+            
+            <% if (error && error.length > 0) { %>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> <%= error[0] %>
+                </div>
+            <% } %>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form id="restauranteForm" action="/dashboard/restaurante/atualizar" method="POST" enctype="multipart/form-data">
+                        <div class="row g-3">
+                            <!-- Nome do Restaurante -->
+                            <div class="col-12">
+                                <label class="form-label"><i class="fas fa-font"></i> Nome do Restaurante</label>
+                                <input type="text" class="form-control" name="nome" value="<%= restaurante.nome %>" required>
+                            </div>
+
+                            <!-- Logo -->
+                            <div class="col-12">
+                                <label class="form-label"><i class="fas fa-image"></i> Logo do Restaurante</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" name="logo" accept="image/*" id="logoInput">
+                                    <input type="hidden" name="logo_atual" value="<%= restaurante.logo_url %>">
+                                </div>
+                                <div id="logoPreview" class="mt-2">
+                                    <% if (restaurante.logo_url) { %>
+                                        <img src="<%= restaurante.logo_url %>" class="img-thumbnail" style="max-width: 200px;">
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Horários -->
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="fas fa-clock"></i> Horário de Abertura</label>
+                                <input type="time" class="form-control" name="horario_abertura" value="<%= restaurante.horario_abertura %>" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="fas fa-clock"></i> Horário de Fechamento</label>
+                                <input type="time" class="form-control" name="horario_fechamento" value="<%= restaurante.horario_fechamento %>" required>
+                            </div>
+
+                            <!-- Dias de Funcionamento -->
+                            <div class="col-12">
+                                <label class="form-label"><i class="fas fa-calendar"></i> Dias de Funcionamento</label>
+                                <div class="btn-group d-flex flex-wrap gap-2" role="group">
+                                    <% 
+                                    // Convert dias_funcionamento to array if it exists, or create empty array
+                                    const diasSelecionados = restaurante.dias_funcionamento ? 
+                                        (Array.isArray(restaurante.dias_funcionamento) ? 
+                                            restaurante.dias_funcionamento : 
+                                            restaurante.dias_funcionamento.split(',')) : 
+                                        [];
+                                    
+                                    ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'].forEach(dia => { 
+                                    %>
+                                        <div class="form-check">
+                                            <input type="checkbox" 
+                                                   class="form-check-input"
+                                                   name="dias_funcionamento[]" 
+                                                   id="dia_<%= dia %>"
+                                                   value="<%= dia %>"
+                                                   <%= diasSelecionados.includes(dia) ? 'checked' : '' %>>
+                                            <label class="form-check-label" for="dia_<%= dia %>"><%= dia %></label>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                            </div>
+
+                            <!-- Endereço -->
+                            <div class="col-12">
+                                <label class="form-label"><i class="fas fa-map-marker-alt"></i> Endereço</label>
+                                <input type="text" class="form-control" name="endereco" id="endereco" value="<%= restaurante.endereco %>" required>
+                                <input type="hidden" name="latitude" id="latitude" value="<%= restaurante.latitude %>">
+                                <input type="hidden" name="longitude" id="longitude" value="<%= restaurante.longitude %>">
+                            </div>
+
+                            <!-- Mapa -->
+                            <div class="col-12">
+                                <div id="map" class="border rounded" style="height: 300px;"></div>
+                            </div>
+
+                            <!-- Tipos de Serviço -->
+                            <div class="col-12">
+                                <label class="form-label"><i class="fas fa-concierge-bell"></i> Tipos de Serviço</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="permite_consumo_local" 
+                                               id="consumo_local" <%= restaurante.permite_consumo_local ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="consumo_local">Consumo Local</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="permite_retirada"
+                                               id="retirada" <%= restaurante.permite_retirada ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="retirada">Retirada</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="permite_entrega"
+                                               id="entrega" <%= restaurante.permite_entrega ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="entrega">Entrega</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Opções de Entrega -->
+                            <div class="col-md-4 delivery-options" style="display: <%= restaurante.permite_entrega ? 'block' : 'none' %>;">
+                                <label class="form-label"><i class="fas fa-dollar-sign"></i> Taxa de Entrega</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" class="form-control" name="taxa_entrega" step="0.01" 
+                                           value="<%= restaurante.taxa_entrega || '' %>">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 delivery-options" style="display: <%= restaurante.permite_entrega ? 'block' : 'none' %>;">
+                                <label class="form-label"><i class="fas fa-route"></i> Raio de Entrega</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="raio_entrega" 
+                                           value="<%= restaurante.raio_entrega || '' %>">
+                                    <span class="input-group-text">km</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 delivery-options" style="display: <%= restaurante.permite_entrega ? 'block' : 'none' %>;">
+                                <label class="form-label"><i class="fas fa-clock"></i> Tempo Médio de Entrega</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="tempo_medio_entrega" 
+                                           value="<%= restaurante.tempo_medio_entrega || '' %>">
+                                    <span class="input-group-text">min</span>
+                                </div>
+                            </div>
+
+                            <!-- Botão Submit -->
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Google Maps Script -->
+<script>
+    function initMap() {
+        const initialLat = parseFloat(document.getElementById('latitude').value) || -23.550520;
+        const initialLng = parseFloat(document.getElementById('longitude').value) || -46.633308;
+        
+        const map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: initialLat, lng: initialLng },
+            zoom: 15
+        });
+
+        const marker = new google.maps.Marker({
+            map: map,
+            position: { lat: initialLat, lng: initialLng },
+            draggable: true
+        });
+
+        const autocomplete = new google.maps.places.Autocomplete(
+            document.getElementById('endereco'),
+            { types: ['address'] }
+        );
+
+        autocomplete.addListener('place_changed', function() {
+            const place = autocomplete.getPlace();
+            if (!place.geometry) return;
+
+            map.setCenter(place.geometry.location);
+            marker.setPosition(place.geometry.location);
+            
+            document.getElementById('latitude').value = place.geometry.location.lat();
+            document.getElementById('longitude').value = place.geometry.location.lng();
+        });
+
+        marker.addListener('dragend', function() {
+            const position = marker.getPosition();
+            document.getElementById('latitude').value = position.lat();
+            document.getElementById('longitude').value = position.lng();
+        });
+    }
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyByaapHr5ykvn4JKBwT9hlZ_B-nElnzMBc&libraries=places&callback=initMap" ></script>
+
+<%- include('footer') %>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Restaurante</title>
+    <link rel="stylesheet" href="/css/framework7.bundle.min.css">
+    <style>
+        .custom-file-upload {
+            border: 1px solid #ddd;
+            display: inline-block;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .preview-image {
+            max-width: 200px;
+            margin-top: 10px;
+        }
+        .map-container {
+            height: 300px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="page">
+            <div class="navbar">
+                <div class="navbar-inner sliding">
+                    <div class="left">
+                        <a href="/dashboard" class="link back">
+                            <i class="icon icon-back"></i>
+                            <span>Voltar</span>
+                        </a>
+                    </div>
+                    <div class="title">Cadastro de Restaurante</div>
+                </div>
+            </div>
+
+            <div class="page-content">
+                <div class="block">
+                    <form id="restauranteForm" action="/dashboard/restaurante/cadastrar" method="POST" enctype="multipart/form-data">
+                        <div class="list no-hairlines-md">
+                            <ul>
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Nome do Restaurante</div>
+                                        <div class="item-input-wrap">
+                                            <input type="text" name="nome" required>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Logo do Restaurante</div>
+                                        <div class="item-input-wrap">
+                                            <input type="file" name="logo" accept="image/*" id="logoInput" style="display: none;">
+                                            <label for="logoInput" class="custom-file-upload">
+                                                Escolher Arquivo
+                                            </label>
+                                            <div id="logoPreview"></div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Horário de Abertura</div>
+                                        <div class="item-input-wrap">
+                                            <input type="time" name="horario_abertura" required>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Horário de Fechamento</div>
+                                        <div class="item-input-wrap">
+                                            <input type="time" name="horario_fechamento" required>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Dias de Funcionamento</div>
+                                        <div class="item-input-wrap">
+                                            <div class="checkbox-group">
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Segunda"> Segunda
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Terça"> Terça
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Quarta"> Quarta
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Quinta"> Quinta
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Sexta"> Sexta
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Sábado"> Sábado
+                                                </label>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="dias_funcionamento[]" value="Domingo"> Domingo
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Endereço</div>
+                                        <div class="item-input-wrap">
+                                            <input type="text" name="endereco" id="endereco" required>
+                                            <input type="hidden" name="latitude" id="latitude">
+                                            <input type="hidden" name="longitude" id="longitude">
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <div id="map" class="map-container"></div>
+
+                                <li class="item-content">
+                                    <div class="item-inner">
+                                        <div class="item-title">Tipos de Serviço</div>
+                                        <div class="item-after">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="permite_consumo_local"> Consumo Local
+                                            </label>
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="permite_retirada"> Retirada
+                                            </label>
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="permite_entrega"> Entrega
+                                            </label>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input delivery-options" style="display: none;">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Taxa de Entrega</div>
+                                        <div class="item-input-wrap">
+                                            <input type="number" name="taxa_entrega" step="0.01">
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input delivery-options" style="display: none;">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Raio de Entrega (km)</div>
+                                        <div class="item-input-wrap">
+                                            <input type="number" name="raio_entrega">
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="item-content item-input delivery-options" style="display: none;">
+                                    <div class="item-inner">
+                                        <div class="item-title item-label">Tempo Médio de Entrega (minutos)</div>
+                                        <div class="item-input-wrap">
+                                            <input type="number" name="tempo_medio_entrega">
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="block">
+                            <button type="submit" class="button button-fill">Cadastrar Restaurante</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/framework7.bundle.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA1JS2rjrDnshM3Q_pX-XagWziIK8Rfing&libraries=places"></script>
+    <script src="/js/restaurante-maps.js"></script>
+    <script>
+        var app = new Framework7({
+            root: '#app',
+            theme: 'ios',
+        });
+
+        // Preview da logo
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('logoPreview');
+                    preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Mostrar/ocultar opções de entrega
+        document.querySelector('input[name="permite_entrega"]').addEventListener('change', function(e) {
+            const deliveryOptions = document.querySelectorAll('.delivery-options');
+            deliveryOptions.forEach(option => {
+                option.style.display = e.target.checked ? 'block' : 'none';
+            });
+        });
+
+        // Inicialização do mapa e autocomplete
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: -23.550520, lng: -46.633308 },
+                zoom: 13
+            });
+
+            const input = document.getElementById('endereco');
+            const autocomplete = new google.maps.places.Autocomplete(input);
+
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) return;
+
+                map.setCenter(place.geometry.location);
+                new google.maps.Marker({
+                    map: map,
+                    position: place.geometry.location
+                });
+
+                document.getElementById('latitude').value = place.geometry.location.lat();
+                document.getElementById('longitude').value = place.geometry.location.lng();
+            });
+        }
+
+        // Inicializa o mapa quando a API do Google Maps carregar
+        google.maps.event.addDomListener(window, 'load', initMap);
+    </script>
+</body>
+</html>

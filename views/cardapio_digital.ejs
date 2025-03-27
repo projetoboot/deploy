@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio Digital - Lanchonete Bot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/cardapio.css?<%= Date.now() %>">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+</head>
+<body>
+    <!-- Header -->
+   <div class="header">
+    <div class="header-content">
+        <h1>Lanchonete Bot</h1>
+        <div class="carrinho-header">
+            <% if (carrinho && carrinho.length > 0) { %>
+                <div class="carrinho-info">
+                    <span class="carrinho-quantidade"><%= carrinho.length %></span>
+                    <span class="carrinho-total">
+                        R$ <%= carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2) %>
+                    </span>
+                </div>
+            <% } else { %>
+                <div class="carrinho-vazio">
+                   
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+    <!-- Barra de Busca -->
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Buscar pratos e restaurantes" id="searchInput">
+       
+    </div>
+
+    <!-- Navegação de Categorias -->
+    <nav class="categorias-nav">
+        <div class="categorias-lista">
+            <button class="categoria-btn ativo" data-categoria="todos">
+                <div class="categoria-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <span>Todos</span>
+            </button>
+            <% 
+            const categorias = [...new Set(cardapio.map(item => item.categoria))];
+            categorias.forEach(categoria => { 
+                let icone = '';
+                switch(categoria) {
+                    case 'Lanches':
+                        icone = 'fas fa-burger';
+                        break;
+                    case 'Pizzas':
+                        icone = 'fas fa-pizza-slice';
+                        break;
+                    case 'Bebidas':
+                        icone = 'fas fa-martini-glass';
+                        break;
+                    case 'Sobremesas':
+                        icone = 'fas fa-ice-cream';
+                        break;
+                    case 'Acompanhamentos':
+                        icone = 'fas fa-bowl-food';
+                        break;
+                    case 'Oriental':
+                        icone = 'fas fa-bowl-rice';
+                        break;
+                    default:
+                        icone = 'fas fa-utensils';
+                }
+            %>
+                <button class="categoria-btn" data-categoria="<%= categoria %>">
+                    <div class="categoria-icon">
+                        <i class="<%= icone %>"></i>
+                    </div>
+                    <span><%= categoria %></span>
+                </button>
+            <% }); %>
+        </div>
+    </nav>
+
+    <!-- Container Principal -->
+    <div class="container">
+        <div class="produtos-grid">
+            <% cardapio.forEach(produto => { %>
+                <div class="produto-card" 
+                     data-restaurante_id="<%= produto.restaurante_id %>"
+                     data-id="<%= produto.id %>"
+                     data-nome="<%= produto.nome %>"
+                     data-preco="<%= produto.preco %>"
+                     data-categoria="<%= produto.categoria %>"
+                     data-descricao="<%= produto.descricao %>"
+                     data-imagem="<%= produto.imagem %>"
+                     data-opcionais='<%= JSON.stringify(produto.opcionais) %>'>
+                    <img src="/uploads/<%= produto.imagem %>" alt="<%= produto.nome %>" class="produto-imagem">
+                    <div class="produto-info">
+                        <h3 class="produto-nome"><%= produto.nome %></h3>
+                        <h4 class="produto-descricao"><%= produto.descricao %></h4>
+                        <p class="produto-preco">R$ <%= typeof produto.preco === 'number' ? produto.preco.toFixed(2) : '0.00' %></p>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- Modal de Produto -->
+    <div class="modal" id="modalProduto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+           
+            <div class="modal-imagem">
+                <img src="" alt="" class="modal-produto-img">
+            </div>
+            <div class="modal-descricao">
+                <p class="produto-descricao-texto"></p>
+            </div>
+            <div class="quantidade-controle">
+                <button class="quantidade-btn diminuir">-</button>
+                <input type="number" class="quantidade-input" value="1" min="1" max="10" readonly>
+                <button class="quantidade-btn aumentar">+</button>
+            </div>
+           
+            <div class="opcionais-container">
+                <h4>Opcionais</h4>
+                <div class="opcionais-lista"></div>
+            </div>
+            <div class="modal-footer">
+                <div style="display: none;" class="total-preco"></div>
+                <button class="adicionar-carrinho-btn">Adicionar ao Carrinho</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Carrinho -->
+    <div class="modal" id="modalCarrinho">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Seu Carrinho</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="carrinho-lista"></div>
+
+                <div class="carrinho-total-modal">Total: R$ 0,00</div>
+                <div class="carrinho-vazio" style="display: none;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Seu carrinho está vazio</p>
+                </div>
+
+                <div class="tipo-entrega-container">
+                    <h4>Como você quer receber seu pedido?</h4>
+                    <div class="opcoes-entrega">
+                        <label class="opcao-entrega">
+                            <input type="radio" name="tipo-entrega" value="local" checked>
+                            <div class="opcao-conteudo">
+                                <i class="fas fa-utensils"></i>
+                                <span>Consumir na Loja</span>
+                            </div>
+                        </label>
+                        <label class="opcao-entrega">
+                            <input type="radio" name="tipo-entrega" value="retirada">
+                            <div class="opcao-conteudo">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>Retirar no Local</span>
+                            </div>
+                        </label>
+                        <label class="opcao-entrega">
+                            <input type="radio" name="tipo-entrega" value="entrega">
+                            <div class="opcao-conteudo">
+                                <i class="fas fa-motorcycle"></i>
+                                <span>Delivery</span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="endereco-entrega" style="display: none;">
+                        <div class="endereco-input-container">
+                            <input 
+                                type="text" 
+                                id="endereco-autocomplete"
+                                class="endereco-input" 
+                                placeholder="Digite seu endereço para entrega" 
+                            />
+                            <button type="button" class="localizacao-atual-btn" title="Usar minha localização atual">
+                                <i class="fas fa-crosshairs"></i>
+                            </button>
+                            <button type="button" class="abrir-mapa-btn" title="Selecionar no mapa">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </button>
+                        </div>
+                        <textarea 
+                            id="endereco-completo"
+                            placeholder="Complemento, apartamento, ponto de referência"
+                            rows="2"
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <!-- Modal do Mapa -->
+                <div id="mapa-modal" class="modal">
+                    <div class="modal-content mapa-modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Selecione sua localização</h3>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="mapa-search-container">
+                            <input type="text" id="mapa-search" placeholder="Pesquisar endereço" />
+                            <button id="mapa-minha-localizacao">
+                                <i class="fas fa-crosshairs"></i> Minha localização
+                            </button>
+                        </div>
+                        <div id="google-map" class="google-map"></div>
+                        <div class="mapa-footer">
+                            <div id="mapa-endereco-selecionado">Nenhum endereço selecionado</div>
+                            <button id="confirmar-endereco-btn" class="confirmar-endereco-btn" disabled>Confirmar este endereço</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="botoes-carrinho">
+                    <div class="cliente-telefone-container">
+                        <h4>Número de Telefone</h4>
+                        <div class="telefone-input-wrapper">
+                            <input type="tel" 
+                                                id="telefone-cliente" 
+                                                class="telefone-input" 
+                                                placeholder="(00) 00000-0000" 
+                                                maxlength="15"
+                                                pattern="\([0-9]{2}\) [0-9]{5}-[0-9]{4}"
+                                                required>
+                            <small class="telefone-info">Necessário para confirmar seu pedido</small>
+                        </div>
+                    </div>
+                    <button class="finalizar-pedido-btn">Finalizar Pedido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação Inferior -->
+    <nav class="nav-bottom">
+        <a href="/" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        
+        <a href="#" class="nav-item carrinho-nav-btn">
+          <div class="categoria-icon-2"> </div>
+            <div class="carrinho-icon-wrapper">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="carrinho-badge">0</span>
+            </div>
+            <span class="carrinho-total">R$ 0,00</span>
+        </a>
+        
+        <a href="/pedidos" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Pedidos</span>
+        </a>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="/js/modal_layout.js"></script>
+    <script>
+        const telefoneInput = document.getElementById('telefone-cliente');
+        const finalizarBtn = document.querySelector('.finalizar-pedido-btn');
+        
+        // Initially disable the button
+        finalizarBtn.disabled = true;
+        
+        function validatePhoneNumber(phone) {
+            const phonePattern = /^\([0-9]{2}\) [0-9]{5}-[0-9]{4}$/;
+            return phonePattern.test(phone);
+        }
+
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Remove everything except numbers
+            value = value.replace(/\D/g, '');
+            
+            // Apply the mask
+            if (value.length <= 11) {
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+            }
+            
+            // Update the input value
+            e.target.value = value;
+            
+            // Enable/disable button based on validation
+            finalizarBtn.disabled = !validatePhoneNumber(value);
+        });
+
+        telefoneInput.addEventListener('keypress', function(e) {
+            // Allow only numbers
+            if (!/\d/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+    
+    <!-- Script do Google Maps para autocompletar endereços -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyByaapHr5ykvn4JKBwT9hlZ_B-nElnzMBc&libraries=places&callback=initMapFunctions" async defer></script>
+    <script>
+        // Variáveis globais para o mapa
+        let map, marker, autocomplete, mapAutocomplete;
+        let selectedLocation = null;
+        
+        // Funções para inicializar o mapa e autocompletar
+        function initMapFunctions() {
+            initAutocomplete();
+            setupMapModal();
+            setupLocationButtons();
+        }
+        
+        // Inicializar o autocompletar para o campo de endereço
+        function initAutocomplete() {
+            const input = document.getElementById('endereco-autocomplete');
+            const options = {
+                componentRestrictions: { country: 'br' },
+                fields: ['address_components', 'geometry', 'name', 'formatted_address']
+            };
+            
+            autocomplete = new google.maps.places.Autocomplete(input, options);
+            autocomplete.addListener('place_changed', fillInAddress);
+        }
+        
+        // Preencher o endereço quando um lugar for selecionado
+        function fillInAddress() {
+            const place = autocomplete.getPlace();
+            if (!place.geometry) {
+                console.log("Não foi possível encontrar detalhes para o lugar selecionado.");
+                return;
+            }
+            
+            selectedLocation = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+                address: place.formatted_address
+            };
+            
+            console.log("Endereço preenchido:", selectedLocation);
+        }
+        
+        // Configurar o modal do mapa
+        function setupMapModal() {
+            const mapaModal = document.getElementById('mapa-modal');
+            const mapaSearchInput = document.getElementById('mapa-search');
+            const confirmarEnderecoBtn = document.getElementById('confirmar-endereco-btn');
+            const closeBtn = mapaModal.querySelector('.modal-close');
+            
+            // Inicializar mapa quando o modal abrir
+            document.querySelector('.abrir-mapa-btn').addEventListener('click', () => {
+                mapaModal.style.display = 'block';
+                mapaModal.classList.add('ativo');
+                
+                if (!map) {
+                    // Centro inicial (Brasil)
+                    const defaultLocation = { lat: -14.235, lng: -51.9253 };
+                    
+                    map = new google.maps.Map(document.getElementById('google-map'), {
+                        center: defaultLocation,
+                        zoom: 4,
+                        mapTypeControl: false,
+                        streetViewControl: false
+                    });
+                    
+                    // Criar marker que será movido quando o usuário clicar no mapa
+                    marker = new google.maps.Marker({
+                        map: map,
+                        draggable: true,
+                        animation: google.maps.Animation.DROP
+                    });
+                    
+                    // Adicionar listener para cliques no mapa
+                    map.addListener('click', (event) => {
+                        placeMarkerAndUpdateAddress(event.latLng);
+                    });
+                    
+                    // Adicionar listener para quando o marker for arrastado
+                    marker.addListener('dragend', () => {
+                        const position = marker.getPosition();
+                        updateAddressFromLatLng(position.lat(), position.lng());
+                    });
+                    
+                    // Inicializar autocomplete para a busca no mapa
+                    mapAutocomplete = new google.maps.places.Autocomplete(mapaSearchInput, {
+                        componentRestrictions: { country: 'br' }
+                    });
+                    
+                    mapAutocomplete.addListener('place_changed', () => {
+                        const place = mapAutocomplete.getPlace();
+                        if (!place.geometry) return;
+                        
+                        map.setCenter(place.geometry.location);
+                        map.setZoom(15);
+                        placeMarkerAndUpdateAddress(place.geometry.location);
+                    });
+                }
+                
+                // Se já tiver uma localização selecionada, centralizar nela
+                if (selectedLocation) {
+                    const latLng = new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng);
+                    map.setCenter(latLng);
+                    map.setZoom(15);
+                    placeMarkerAndUpdateAddress(latLng);
+                }
+            });
+            
+            // Fechar modal
+            closeBtn.addEventListener('click', () => {
+                mapaModal.style.display = 'none';
+                mapaModal.classList.remove('ativo');
+            });
+            
+            // Fechar modal clicando fora
+            window.addEventListener('click', (e) => {
+                if (e.target === mapaModal) {
+                    mapaModal.style.display = 'none';
+                    mapaModal.classList.remove('ativo');
+                }
+            });
+            
+            // Botão para usar minha localização no mapa
+            document.getElementById('mapa-minha-localizacao').addEventListener('click', () => {
+                getUserLocation((position) => {
+                    const latLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                    map.setCenter(latLng);
+                    map.setZoom(16);
+                    placeMarkerAndUpdateAddress(latLng);
+                });
+            });
+            
+            // Confirmar endereço selecionado no mapa
+            confirmarEnderecoBtn.addEventListener('click', () => {
+                if (selectedLocation) {
+                    document.getElementById('endereco-autocomplete').value = selectedLocation.address;
+                    mapaModal.style.display = 'none';
+                    mapaModal.classList.remove('ativo');
+                }
+            });
+        }
+        
+        // Colocar marker no mapa e atualizar o endereço
+        function placeMarkerAndUpdateAddress(latLng) {
+            marker.setPosition(latLng);
+            updateAddressFromLatLng(latLng.lat(), latLng.lng());
+        }
+        
+        // Atualizar endereço a partir das coordenadas
+        function updateAddressFromLatLng(lat, lng) {
+            const geocoder = new google.maps.Geocoder();
+            const latLng = new google.maps.LatLng(lat, lng);
+            
+            geocoder.geocode({ location: latLng }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    selectedLocation = {
+                        lat: lat,
+                        lng: lng,
+                        address: results[0].formatted_address
+                    };
+                    
+                    document.getElementById('mapa-endereco-selecionado').textContent = selectedLocation.address;
+                    document.getElementById('confirmar-endereco-btn').disabled = false;
+                } else {
+                    console.log('Erro ao obter endereço:', status);
+                    document.getElementById('mapa-endereco-selecionado').textContent = 'Não foi possível obter o endereço';
+                    document.getElementById('confirmar-endereco-btn').disabled = true;
+                }
+            });
+        }
+        
+        // Configurar botões de localização
+        function setupLocationButtons() {
+            // Botão para usar localização atual diretamente (sem mapa)
+            document.querySelector('.localizacao-atual-btn').addEventListener('click', () => {
+                getUserLocation((position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    const geocoder = new google.maps.Geocoder();
+                    const latLng = new google.maps.LatLng(lat, lng);
+                    
+                    geocoder.geocode({ location: latLng }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            document.getElementById('endereco-autocomplete').value = results[0].formatted_address;
+                            selectedLocation = {
+                                lat: lat,
+                                lng: lng,
+                                address: results[0].formatted_address
+                            };
+                        } else {
+                            console.log('Erro ao obter endereço:', status);
+                            alert('Não foi possível determinar seu endereço. Por favor, digite manualmente.');
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Obter localização do usuário
+        function getUserLocation(callback) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    callback,
+                    (error) => {
+                        console.error('Erro ao obter localização:', error);
+                        alert('Não foi possível obter sua localização. Verifique se você permitiu o acesso à sua localização.');
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                alert('Seu navegador não suporta geolocalização.');
+            }
+        }
+        
+        // Mostrar/esconder campo de endereço baseado no tipo de entrega
+        const tipoEntregaInputs = document.querySelectorAll('input[name="tipo-entrega"]');
+        const enderecoEntrega = document.querySelector('.endereco-entrega');
+        
+        tipoEntregaInputs.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                enderecoEntrega.style.display = e.target.value === 'entrega' ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>

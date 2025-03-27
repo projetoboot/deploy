@@ -1,0 +1,337 @@
+{
+    "Brasileira": [
+        {
+            "nome": "Unde",
+            "descricao": "Commodi consequatur mollitia repudiandae.",
+            "preco": 96.57,
+            "tempo_preparo": 10,
+            "ingredientes": [
+                "similique",
+                "voluptas",
+                "blanditiis",
+                "nulla",
+                "cupiditate",
+                "perspiciatis",
+                "nesciunt",
+                "laudantium"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                false
+            ],
+            "imagem": "imagens/Unde.jpg"
+        },
+        {
+            "nome": "Nesciunt Provident Asperiores",
+            "descricao": "Suscipit optio eveniet unde vel. Provident odit fugiat deserunt nihil sunt sequi alias.",
+            "preco": 77.08,
+            "tempo_preparo": 86,
+            "ingredientes": [
+                "aliquam",
+                "repudiandae",
+                "quasi",
+                "quam",
+                "quisquam",
+                "quaerat"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                false,
+                false,
+                true,
+                true,
+                true
+            ],
+            "imagem": "imagens/Nesciunt_Provident_Asperiores.jpg"
+        },
+        {
+            "nome": "Quasi Recusandae Ullam Adipisci",
+            "descricao": "Nisi veniam neque dolores id accusantium beatae tenetur.",
+            "preco": 6.12,
+            "tempo_preparo": 37,
+            "ingredientes": [
+                "amet",
+                "voluptatibus",
+                "impedit"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                true,
+                false
+            ],
+            "imagem": "imagens/Quasi_Recusandae_Ullam_Adipisci.jpg"
+        }
+    ],
+    "Lanches": [
+        {
+            "nome": "Atque Voluptatum",
+            "descricao": "Officia distinctio distinctio eveniet odit. Dolor velit porro possimus voluptatibus voluptatum.",
+            "preco": 37.55,
+            "tempo_preparo": 99,
+            "ingredientes": [
+                "temporibus",
+                "itaque",
+                "voluptate",
+                "assumenda"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                true,
+                false,
+                true
+            ],
+            "imagem": "imagens/Atque_Voluptatum.jpg"
+        },
+        {
+            "nome": "A Expedita",
+            "descricao": "Quibusdam provident quia possimus quis.",
+            "preco": 89.01,
+            "tempo_preparo": 54,
+            "ingredientes": [
+                "quam",
+                "qui",
+                "eligendi",
+                "aperiam",
+                "totam",
+                "dolores"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                false,
+                true,
+                false,
+                true,
+                false
+            ],
+            "imagem": "imagens/A_Expedita.jpg"
+        },
+        {
+            "nome": "Amet Nobis Cum Optio",
+            "descricao": "Quaerat alias necessitatibus magnam molestias in non. Ad enim vitae.",
+            "preco": 93.8,
+            "tempo_preparo": 98,
+            "ingredientes": [
+                "sunt",
+                "molestiae",
+                "sed",
+                "minus",
+                "quam",
+                "ullam",
+                "deserunt",
+                "eos"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                false,
+                false
+            ],
+            "imagem": "imagens/Amet_Nobis_Cum_Optio.jpg"
+        }
+    ],
+    "Pizzas": [
+        {
+            "nome": "Vitae",
+            "descricao": "Consequuntur quos expedita odio delectus. Excepturi porro exercitationem laborum.",
+            "preco": 95.75,
+            "tempo_preparo": 35,
+            "ingredientes": [
+                "tempore",
+                "quis",
+                "minus",
+                "ullam",
+                "reprehenderit",
+                "aperiam"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                true
+            ],
+            "imagem": "imagens/Vitae.jpg"
+        },
+        {
+            "nome": "Ipsam Placeat",
+            "descricao": "Qui suscipit enim aperiam. Porro at maxime.",
+            "preco": 2.65,
+            "tempo_preparo": 71,
+            "ingredientes": [
+                "provident",
+                "sint",
+                "nam",
+                "soluta"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                true,
+                false,
+                true
+            ],
+            "imagem": "imagens/Ipsam_Placeat.jpg"
+        },
+        {
+            "nome": "Assumenda Delectus Error",
+            "descricao": "Neque vero eveniet consequatur.",
+            "preco": 36.84,
+            "tempo_preparo": 17,
+            "ingredientes": [
+                "libero",
+                "nam",
+                "quaerat",
+                "officiis",
+                "ratione"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                true,
+                true,
+                true,
+                false
+            ],
+            "imagem": "imagens/Assumenda_Delectus_Error.jpg"
+        }
+    ],
+    "Japonesa": [
+        {
+            "nome": "Recusandae At",
+            "descricao": "Saepe odit eius incidunt repudiandae dolorum aut. Eligendi aliquam cum corrupti cumque alias quisquam inventore.",
+            "preco": 23.56,
+            "tempo_preparo": 20,
+            "ingredientes": [
+                "provident",
+                "animi",
+                "ea",
+                "aspernatur",
+                "ut"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                true,
+                true,
+                true,
+                true
+            ],
+            "imagem": "imagens/Recusandae_At.jpg"
+        },
+        {
+            "nome": "Voluptate Optio Numquam",
+            "descricao": "Rem molestiae cupiditate rem nihil expedita voluptas. Cumque error molestiae ex reiciendis nam explicabo.",
+            "preco": 20.67,
+            "tempo_preparo": 45,
+            "ingredientes": [
+                "harum",
+                "laborum",
+                "iure",
+                "harum"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                false,
+                true,
+                false
+            ],
+            "imagem": "imagens/Voluptate_Optio_Numquam.jpg"
+        },
+        {
+            "nome": "Debitis Rem",
+            "descricao": "Perspiciatis voluptatem occaecati fugit natus. Iure illum quis maiores ex exercitationem.",
+            "preco": 60.12,
+            "tempo_preparo": 13,
+            "ingredientes": [
+                "illum",
+                "laborum",
+                "eius",
+                "nostrum"
+            ],
+            "ingredientes_removiveis": [
+                true,
+                false,
+                false,
+                false
+            ],
+            "imagem": "imagens/Debitis_Rem.jpg"
+        }
+    ],
+    "Bebidas": [
+        {
+            "nome": "Voluptatem Repellendus",
+            "descricao": "Molestiae at possimus sint. Nesciunt fugiat voluptatem ad quae ratione molestiae.",
+            "preco": 17.63,
+            "tempo_preparo": 44,
+            "ingredientes": [
+                "quidem",
+                "facilis",
+                "pariatur",
+                "eius"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                false,
+                true,
+                true
+            ],
+            "imagem": "imagens/Voluptatem_Repellendus.jpg"
+        },
+        {
+            "nome": "Cupiditate Commodi",
+            "descricao": "Vero maiores cumque vel quisquam. Non nihil quae repellat.",
+            "preco": 4.1,
+            "tempo_preparo": 45,
+            "ingredientes": [
+                "libero",
+                "aperiam",
+                "culpa",
+                "odio",
+                "id",
+                "eveniet"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                false,
+                true,
+                true,
+                true,
+                true
+            ],
+            "imagem": "imagens/Cupiditate_Commodi.jpg"
+        },
+        {
+            "nome": "Nam Eum Veniam Quibusdam",
+            "descricao": "Vel fugit maxime recusandae enim.",
+            "preco": 35.75,
+            "tempo_preparo": 100,
+            "ingredientes": [
+                "impedit",
+                "ipsam",
+                "asperiores",
+                "at",
+                "quidem",
+                "numquam",
+                "exercitationem"
+            ],
+            "ingredientes_removiveis": [
+                false,
+                true,
+                true,
+                true,
+                false,
+                true,
+                false
+            ],
+            "imagem": "imagens/Nam_Eum_Veniam_Quibusdam.jpg"
+        }
+    ]
+}

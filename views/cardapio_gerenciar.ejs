@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Cardápio</title>
+    <link rel="stylesheet" href="/css/framework7.bundle.min.css">
+    <style>
+        .preview-image {
+            max-width: 200px;
+            margin-top: 10px;
+        }
+        .custom-file-upload {
+            border: 1px solid #ddd;
+            display: inline-block;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .ingredientes-container, .complementos-container {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        .item-row {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            gap: 10px;
+        }
+        .remove-btn {
+            color: red;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="page">
+            <div class="navbar">
+                <div class="navbar-inner sliding">
+                    <div class="left">
+                        <a href="/dashboard" class="link back">
+                            <i class="icon icon-back"></i>
+                            <span>Voltar</span>
+                        </a>
+                    </div>
+                    <div class="title">Gerenciar Cardápio</div>
+                </div>
+            </div>
+
+            <div class="page-content">
+                <div class="block">
+                    <div class="segmented">
+                        <button class="button button-active tab-link" data-tab="#tab-1">Pratos</button>
+                        <button class="button tab-link" data-tab="#tab-2">Categorias</button>
+                    </div>
+
+                    <div class="tabs">
+                        <div id="tab-1" class="tab tab-active">
+                            <!-- Lista de Pratos -->
+                            <div class="card data-table">
+                                <div class="card-header">
+                                    <div class="data-table-title">Pratos Cadastrados</div>
+                                    <div class="data-table-actions">
+                                        <a class="link" onclick="app.dialog.create({title: 'Novo Prato', content: document.getElementById('formNovoPrato').innerHTML, on: {opened: initFormPrato}}).open()">
+                                            <i class="icon f7-icons">plus</i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Categoria</th>
+                                                <th>Preço</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% pratos.forEach(function(prato) { %>
+                                            <tr>
+                                                <td><%= prato.nome %></td>
+                                                <td><%= prato.categoria %></td>
+                                                <td>R$ <%= prato.preco.toFixed(2) %></td>
+                                                <td>
+                                                    <a href="#" onclick="editarPrato(<%= JSON.stringify(prato) %>)" class="link">
+                                                        <i class="icon f7-icons">pencil</i>
+                                                    </a>
+                                                    <a href="#" onclick="excluirPrato(<%= prato.id %>)" class="link color-red">
+                                                        <i class="icon f7-icons">trash</i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-2" class="tab">
+                            <!-- Lista de Categorias -->
+                            <div class="card data-table">
+                                <div class="card-header">
+                                    <div class="data-table-title">Categorias</div>
+                                    <div class="data-table-actions">
+                                        <a class="link" onclick="app.dialog.create({title: 'Nova Categoria', content: document.getElementById('formNovaCategoria').innerHTML}).open()">
+                                            <i class="icon f7-icons">plus</i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-content">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Descrição</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% categorias.forEach(function(categoria) { %>
+                                            <tr>
+                                                <td><%= categoria.nome %></td>
+                                                <td><%= categoria.descricao %></td>
+                                                <td>
+                                                    <a href="#" onclick="editarCategoria(<%= JSON.stringify(categoria) %>)" class="link">
+                                                        <i class="icon f7-icons">pencil</i>
+                                                    </a>
+                                                    <a href="#" onclick="excluirCategoria(<%= categoria.id %>)" class="link color-red">
+                                                        <i class="icon f7-icons">trash</i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template do formulário de novo prato -->
+    <script type="text/template" id="formNovoPrato">
+        <form id="pratoForm" action="/dashboard/cardapio/prato/salvar" method="POST" enctype="multipart/form-data">
+            <div class="list no-hairlines-md">
+                <ul>
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Nome do Prato</div>
+                            <div class="item-input-wrap">
+                                <input type="text" name="nome" required>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Categoria</div>
+                            <div class="item-input-wrap">
+                                <select name="categoria_id" required>
+                                    <% categorias.forEach(function(categoria) { %>
+                                    <option value="<%= categoria.id %>"><%= categoria.nome %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Descrição</div>
+                            <div class="item-input-wrap">
+                                <textarea name="descricao"></textarea>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Preço</div>
+                            <div class="item-input-wrap">
+                                <input type="number" name="preco" step="0.01" required>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Tempo de Preparo (minutos)</div>
+                            <div class="item-input-wrap">
+                                <input type="number" name="tempo_preparo" required>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Imagem do Prato</div>
+                            <div class="item-input-wrap">
+                                <input type="file" name="imagem" accept="image/*" id="imagemInput" style="display: none;">
+                                <label for="imagemInput" class="custom-file-upload">
+                                    Escolher Arquivo
+                                </label>
+                                <div id="imagemPreview"></div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content">
+                        <div class="item-inner">
+                            <div class="item-title">Ingredientes</div>
+                            <div class="ingredientes-container">
+                                <div id="ingredientes-list"></div>
+                                <button type="button" class="button" onclick="adicionarIngrediente()">Adicionar Ingrediente</button>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content">
+                        <div class="item-inner">
+                            <div class="item-title">Complementos</div>
+                            <div class="complementos-container">
+                                <div id="complementos-list"></div>
+                                <button type="button" class="button" onclick="adicionarComplemento()">Adicionar Complemento</button>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="block">
+                <button type="submit" class="button button-fill">Salvar Prato</button>
+            </div>
+        </form>
+    </script>
+
+    <!-- Template do formulário de nova categoria -->
+    <script type="text/template" id="formNovaCategoria">
+        <form id="categoriaForm" action="/dashboard/cardapio/categoria/salvar" method="POST">
+            <div class="list no-hairlines-md">
+                <ul>
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Nome da Categoria</div>
+                            <div class="item-input-wrap">
+                                <input type="text" name="nome" required>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Descrição</div>
+                            <div class="item-input-wrap">
+                                <textarea name="descricao"></textarea>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="item-content item-input">
+                        <div class="item-inner">
+                            <div class="item-title item-label">Ordem</div>
+                            <div class="item-input-wrap">
+                                <input type="number" name="ordem" value="0">
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="block">
+                <button type="submit" class="button button-fill">Salvar Categoria</button>
+            </div>
+        </form>
+    </script>
+
+    <script src="/js/framework7.bundle.min.js"></script>
+    <script>
+        var app = new Framework7({
+            root: '#app',
+            theme: 'ios',
+        });
+
+        // Funções para gerenciar ingredientes
+        function adicionarIngrediente() {
+            const container = document.getElementById('ingredientes-list');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <input type="text" name="ingredientes[]" placeholder="Nome do ingrediente" required>
+                <label><input type="checkbox" name="ingredientes_removiveis[]"> Removível</label>
+                <span class="remove-btn" onclick="this.parentElement.remove()">×</span>
+            `;
+            container.appendChild(row);
+        }
+
+        // Funções para gerenciar complementos
+        function adicionarComplemento() {
+            const container = document.getElementById('complementos-list');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <input type="text" name="complementos[]" placeholder="Nome do complemento" required>
+                <input type="number" name="complementos_precos[]" placeholder="Preço adicional" step="0.01" required>
+                <input type="number" name="complementos_max[]" placeholder="Máximo" value="1" required>
+                <span class="remove-btn" onclick="this.parentElement.remove()">×</span>
+            `;
+            container.appendChild(row);
+        }
+
+        // Preview da imagem
+        function initFormPrato() {
+            document.getElementById('imagemInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.getElementById('imagemPreview');
+                        preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Funções para editar e excluir
+        function editarPrato(prato) {
+            // Implementar lógica de edição
+        }
+
+        function excluirPrato(id) {
+            if (confirm('Deseja realmente excluir este prato?')) {
+                window.location.href = `/dashboard/cardapio/prato/excluir/${id}`;
+            }
+        }
+
+        function editarCategoria(categoria) {
+            // Implementar lógica de edição
+        }
+
+        function excluirCategoria(id) {
+            if (confirm('Deseja realmente excluir esta categoria?')) {
+                window.location.

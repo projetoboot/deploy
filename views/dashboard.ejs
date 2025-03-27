@@ -1,0 +1,280 @@
+<%- include('header', { title: 'Dashboard' }) %>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <!-- Desktop Sidebar -->
+        <!-- Desktop version -->
+        <div class="col-md-3 col-lg-2 d-none d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard/pratos">
+                            <i class="fas fa-utensils"></i> Pratos
+                        </a>
+                    </li>
+                   
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard/complementos">
+                            <i class="fas fa-users"></i> Clientes
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard/pedidos">
+                            <i class="fa fa-box"></i> Pedidos
+                        </a>
+                    </li>
+                    
+                    <!-- Add logout button -->
+                    <li class="nav-item mt-3">
+                        <a class="nav-link text-danger" href="/logout">
+                            <i class="fas fa-sign-out-alt"></i> Sair
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <nav class="navbar fixed-bottom navbar-light bg-light d-md-none">
+            <div class="container-fluid">
+                <div class="row w-100 text-center">
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'dashboard' ? 'active' : '' %>" href="/dashboard">
+                            <i class="fas fa-home"></i>
+                            <small class="d-block">Home</small>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'pratos' ? 'active' : '' %>" href="/dashboard/pratos">
+                            <i class="fas fa-utensils"></i>
+                            <small class="d-block">Pratos</small>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'categorias' ? 'active' : '' %>" href="/dashboard/categorias">
+                            <i class="fas fa-tags"></i>
+                            <small class="d-block">Categ.</small>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'ingredientes' ? 'active' : '' %>" href="/dashboard/ingredientes">
+                            <i class="fas fa-pepper-hot"></i>
+                            <small class="d-block">Ingred.</small>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'complementos' ? 'active' : '' %>" href="/dashboard/complementos">
+                            <i class="fas fa-plus-circle"></i>
+                            <small class="d-block">Compl.</small>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="nav-link <%= currentPage === 'qrcode' ? 'active' : '' %>" href="/dashboard/qrcode">
+                            <i class="fas fa-qrcode"></i>
+                            <small class="d-block">QR Code</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <style>
+        /* Add these styles to your existing CSS */
+        .navbar.fixed-bottom {
+            padding: 0.5rem 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar .nav-link {
+            color: #6c757d;
+            padding: 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .navbar .nav-link.active {
+            color: #007bff;
+        }
+
+        .navbar small {
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
+
+        /* Adjust main content padding for mobile */
+        @media (max-width: 767.98px) {
+            .container-fluid {
+                padding-bottom: 80px;
+            }
+        }
+        </style>
+
+        <!-- Main content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <% if (typeof currentPage !== 'undefined' && currentPage && currentPage !== 'dashboard' ) { %>
+                <% try { %>
+                    <%- include(currentPage) %>
+                <% } catch(e) { %>
+                    <div class="alert alert-danger">
+                        Error loading page content
+                    </div>
+                <% } %>
+            <% } else { %>
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Bem-vindo ao Dashboard</h1>
+                </div>
+
+                <!-- Rest of your dashboard content -->
+            <% } %>
+        </div>
+           <% if (currentPage  === 'dashboard') { %>
+           
+            
+                <!-- Restaurant Info Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-store"></i> Informações do Restaurante
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <% if (restaurante.logo_url) { %>
+                                    <img src="<%= restaurante.logo_url %>" alt="Logo" class="img-fluid rounded">
+                                <% } else { %>
+                                    <div class="text-center p-4 bg-light rounded">
+                                        <i class="fas fa-store fa-4x text-muted"></i>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <div class="col-md-9">
+                                <h3><%= restaurante.nome %></h3>
+                                <p><i class="fas fa-map-marker-alt"></i> <%= restaurante.endereco %></p>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-motorcycle mb-2"></i>
+                                                <h5>Entrega</h5>
+                                                <p class="mb-0"><%= restaurante.permite_entrega ? 'Sim' : 'Não' %></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-shopping-bag mb-2"></i>
+                                                <h5>Retirada</h5>
+                                                <p class="mb-0"><%= restaurante.permite_retirada ? 'Sim' : 'Não' %></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-chair mb-2"></i>
+                                                <h5>Consumo Local</h5>
+                                                <p class="mb-0"><%= restaurante.permite_consumo_local ? 'Sim' : 'Não' %></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WhatsApp Connection Status -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="fab fa-whatsapp"></i> Status do WhatsApp
+                    </div>
+                    <div class="card-body text-center">
+                        <% if (qrCode) { %>
+                            <p>Escaneie o QR Code para conectar o WhatsApp:</p>
+                            <img src="<%= qrCode %>" alt="QR Code" class="img-fluid" style="max-width: 300px;">
+                        <% } else { %>
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> WhatsApp conectado!
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<style>
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.5rem 1rem;
+    margin: 0.2rem 0;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: static;
+        padding-top: 0;
+    }
+}
+</style>
+
+<%- include('footer') %>
+
+<style>
+/* Add these styles to your existing CSS */
+.dropdown-menu {
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-item i {
+    margin-right: 0.5rem;
+}
+
+.list-group-item i {
+    width: 20px;
+}
+
+/* Adjust mobile modal styles */
+@media (max-width: 767.98px) {
+    .modal-dialog {
+        margin: 1rem;
+    }
+}
+</style>

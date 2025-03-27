@@ -1,0 +1,172 @@
+<%- include('header', { title: 'Editar Prato' }) %>
+
+<div class="container mt-4">
+    <h2>Editar Prato</h2>
+    
+    <% if (success && success.length > 0) { %>
+        <div class="alert alert-success"><%= success[0] %></div>
+    <% } %>
+    
+    <% if (error && error.length > 0) { %>
+        <div class="alert alert-danger"><%= error[0] %></div>
+    <% } %>
+
+    <form action="/dashboard/pratos/editar/<%= prato.id %>" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-font"></i> Nome do Prato</label>
+            <input type="text" class="form-control" name="nome" value="<%= prato.nome %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-file-alt"></i> Descrição</label>
+            <textarea class="form-control" name="descricao" rows="3" required><%= prato.descricao %></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-dollar-sign"></i> Preço Base</label>
+            <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="text" 
+                       class="form-control" 
+                       id="preco_formatado" 
+                       value="<%= parseFloat(prato.preco).toFixed(2).replace('.', ',') %>"
+                       placeholder="0,00" 
+                       required>
+                <input type="hidden" name="preco" id="preco_valor" value="<%= prato.preco %>">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-tag"></i> Categoria</label>
+            <select class="form-control" name="categoria" required>
+                <option value="">🔍 Selecione uma categoria</option>
+                <% const categorias = {
+                    'Brasileira': '🇧🇷',
+                    'Lanches': '🍔',
+                    'Pizzas': '🍕',
+                    'Italiana': '🍝',
+                    'Japonesa': '🍱',
+                    'Chinesa': '🥢',
+                    'Árabe': '🥙',
+                    'Mexicana': '🌮',
+                    'Marmitas': '🥡',
+                    'Vegetariana': '🥗',
+                    'Fit': '💪',
+                    'Açaí': '🍇',
+                    'Padaria': '🥖',
+                    'Pastel': '🥟',
+                    'Sorvetes': '🍨',
+                    'Espetinhos': '🍖',
+                    'Bebidas': '🥤',
+                    'Porções': '🍟',
+                    'Combos': '📦'
+                }; %>
+                
+                <% for (const [nome, icone] of Object.entries(categorias)) { %>
+                    <option value="<%= nome %>" <%= prato.categoria === nome ? 'selected' : '' %>>
+                        <%= icone %> <%= nome %>
+                    </option>
+                <% } %>
+            </select>
+        </div>
+
+        <div class="mb-3" id="ingredientes_container">
+            <label class="form-label"><i class="fas fa-list"></i> Ingredientes</label>
+            <div id="lista_ingredientes">
+                <% if (ingredientes && ingredientes.length > 0) { %>
+                    <% ingredientes.forEach(ingrediente => { %>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="ingredientes[]" 
+                                   value="<%= ingrediente.nome %>" placeholder="Nome do ingrediente">
+                            <div class="input-group-text">
+                                <input type="checkbox" class="form-check-input mt-0" 
+                                       name="ingredientes_removiveis[]" value="1"
+                                       <%= ingrediente.removivel ? 'checked' : '' %>>
+                                <span class="ms-2">Removível</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger remover-ingrediente">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+            <button type="button" class="btn btn-outline-primary" id="adicionar_ingrediente">
+                <i class="fas fa-plus"></i> Adicionar Ingrediente
+            </button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-image"></i> Imagem do Prato</label>
+            <% if (prato.imagem) { %>
+                <div class="mb-2">
+                    <img src="/uploads/<%= prato.imagem %>" alt="<%= prato.nome %>" style="max-width: 200px;" class="img-thumbnail">
+                </div>
+            <% } %>
+            <input type="file" class="form-control" name="imagem" accept="image/*">
+            <small class="form-text text-muted">Deixe em branco para manter a imagem atual</small>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" name="disponivel" id="disponivel" 
+                   <%= prato.disponivel ? 'checked' : '' %>>
+            <label class="form-check-label" for="disponivel">Disponível para venda</label>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/dashboard/pratos" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Formatação de preços
+        const precoFormatado = document.getElementById('preco_formatado');
+        const precoValor = document.getElementById('preco_valor');
+
+        precoFormatado.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = (parseFloat(valor) / 100).toFixed(2);
+            precoValor.value = valor;
+            e.target.value = valor.replace('.', ',');
+        });
+
+        // Gerenciamento de ingredientes
+        const listaIngredientes = document.getElementById('lista_ingredientes');
+        const btnAdicionarIngrediente = document.getElementById('adicionar_ingrediente');
+
+        function criarLinhaIngrediente() {
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <input type="text" class="form-control" name="ingredientes[]" placeholder="Nome do ingrediente">
+                <div class="input-group-text">
+                    <input type="checkbox" class="form-check-input mt-0" name="ingredientes_removiveis[]" value="1">
+                    <span class="ms-2">Removível</span>
+                </div>
+                <button type="button" class="btn btn-outline-danger remover-ingrediente">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            return div;
+        }
+
+        btnAdicionarIngrediente.addEventListener('click', function() {
+            listaIngredientes.appendChild(criarLinhaIngrediente());
+        });
+
+        listaIngredientes.addEventListener('click', function(e) {
+            if (e.target.closest('.remover-ingrediente')) {
+                e.target.closest('.input-group').remove();
+            }
+        });
+    });
+</script>
+
+<%- include('footer') %>

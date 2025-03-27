@@ -1,0 +1,37 @@
+{
+    "name": "lanchonete-bot",
+    "version": "1.0.0",
+    "description": "Bot de WhatsApp para lanchonete",
+    "scripts": {
+        "start": "nodemon src/app.js",
+        "dashboard": "nodemon src/cardapio.js"
+    },
+    "dependencies": {
+        "autoprefixer": "^10.4.21",
+        "axios": "^1.8.4",
+        "bcrypt": "^5.1.1",
+        "connect-flash": "^0.1.1",
+        "connect-pg-simple": "^10.0.0",
+        "dotenv": "^16.4.7",
+        "ejs": "^3.1.10",
+        "express": "^4.21.2",
+        "express-flash": "^0.0.2",
+        "express-mysql-session": "^3.0.3",
+        "express-session": "^1.18.1",
+        "framework7": "^8.3.4",
+        "jsonwebtoken": "^9.0.2",
+        "lanchonete-bot": "file:",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.14.0",
+        "nodemon": "^2.0.22",
+        "path": "^0.12.7",
+        "pg": "^8.14.1",
+        "postcss": "^8.5.3",
+        "qrcode": "^1.5.4",
+        "qrcode-terminal": "^0.12.0",
+        "readline": "^1.3.0",
+        "string-similarity": "^4.0.4",
+        "tailwindcss": "^4.0.16",
+        "whatsapp-web.js": "^1.26.0"
+    }
+}

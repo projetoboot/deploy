@@ -1,0 +1,643 @@
+ <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Pedidos - Lanchonete</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/cardapio.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+            color: white;
+            padding: 18px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            letter-spacing: 0.5px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        
+        .pedidos-lista {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .pedido-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .pedido-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+        
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(to right, #f9f9f9, #ffffff);
+        }
+        
+        .pedido-header h3 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #f9f9f9 0%, #eaeaea 100%);
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .pedido-numero {
+            font-weight: 700;
+            color: #e53935;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-icon {
+            font-size: 1.2em;
+        }
+        
+        .pendente-icon {
+            color: #FF9800;
+        }
+        
+        .preparo-icon {
+            color: #2196F3;
+        }
+        
+        .entrega-icon {
+            color: #9C27B0;
+        }
+        
+        .concluido-icon {
+            color: #4CAF50;
+        }
+        
+        .pedido-detalhes {
+            padding: 20px;
+        }
+        
+        .produtos-lista {
+            margin-bottom: 20px;
+        }
+        
+        .produtos-lista h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .produtos-lista ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .produto-item {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .produto-imagem {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .produto-imagem img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .no-imagem {
+            font-size: 24px;
+            color: #aaa;
+        }
+        
+        .produto-detalhes {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .produto-nome-preco {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .produto-nome {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #333;
+            letter-spacing: 0.3px;
+        }
+        
+        .produto-preco {
+            font-weight: 600;
+            color: #e53935;
+            font-size: 16px;
+        }
+        
+        .produto-descricao {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-style: italic;
+            line-height: 1.4;
+        }
+        
+        .produto-qtd-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .produto-qtd-label {
+            color: #666;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+        
+        .produto-qtd {
+            color: #333;
+            font-weight: 600;
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .pedido-info {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            background: #f9f9f9;
+            padding: 12px 15px;
+            border-radius: 8px;
+        }
+        
+        .pedido-info p {
+            margin: 5px 0;
+            font-size: 15px;
+        }
+        
+        .filtros {
+            margin: 0;
+        }
+
+        .form-select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.2);
+            font-size: 15px;
+            color: white;
+            font-weight: 600;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding-right: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .form-select:hover, .form-select:focus {
+            background-color: rgba(255,255,255,0.3);
+            outline: none;
+        }
+        
+        .contador-status {
+            display: inline-block;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .status-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-weight: 500;
+            min-width: 140px;
+            cursor: pointer;
+        }
+
+        /* Status color indicators */
+        [data-status="pendente"] .pedido-header {
+            border-left: 5px solid #FF9800;
+            background: linear-gradient(to right, rgba(255, 152, 0, 0.05), #ffffff);
+        }
+        
+        [data-status="preparo"] .pedido-header {
+            border-left: 5px solid #2196F3;
+            background: linear-gradient(to right, rgba(33, 150, 243, 0.05), #ffffff);
+        }
+        
+        [data-status="entrega"] .pedido-header {
+            border-left: 5px solid #9C27B0;
+            background: linear-gradient(to right, rgba(156, 39, 176, 0.05), #ffffff);
+        }
+        
+        [data-status="concluido"] .pedido-header {
+            border-left: 5px solid #4CAF50;
+            background: linear-gradient(to right, rgba(76, 175, 80, 0.05), #ffffff);
+        }
+
+        /* Colors for status options */
+        .status-select option[value="pendente"] { color: #FF9800; }
+        .status-select option[value="preparo"] { color: #2196F3; }
+        .status-select option[value="entrega"] { color: #9C27B0; }
+        .status-select option[value="concluido"] { color: #4CAF50; }
+        
+        /* Adiciona estilo para feedback visual ao atualizar status */
+        .status-atualizado {
+            animation: pulsar 2s ease;
+        }
+        
+        @keyframes pulsar {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            50% { transform: scale(1.01); box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
+        
+        .tempo-decorrido {
+            font-style: italic;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        .cliente-info {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            background: #f9f9f9;
+            padding: 12px 15px;
+            border-radius: 8px;
+        }
+        
+        .cliente-info p {
+            margin: 5px 0;
+            font-size: 15px;
+        }
+        
+        .horario-icon {
+            color: #FF9800;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1><i class="fas fa-utensils"></i> Gerenciamento de Pedidos</h1>
+            <div class="filtros">
+                <select id="filtroStatus" class="form-select">
+                    <option value="todos">Todos os Pedidos</option>
+                    <option value="pendente">Pendentes <span class="contador-status pendente-count"></span></option>
+                    <option value="preparo">Em Preparo <span class="contador-status preparo-count"></span></option>
+                    <option value="entrega">Em Entrega <span class="contador-status entrega-count"></span></option>
+                    <option value="concluido">Concluídos <span class="contador-status concluido-count"></span></option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="pedidos-lista">
+        <% if (pedidos && pedidos.length > 0) { %>
+            <% pedidos.forEach(pedido => { %>
+                <div class="pedido-card" data-status="<%= pedido.status_confirmacao %>" data-pedido-id="<%= pedido.id %>">
+                    <div class="pedido-header">
+                        <h3>
+                            <% if (pedido.status_confirmacao === 'pendente') { %>
+                                <i class="fas fa-hourglass-half status-icon pendente-icon"></i>
+                            <% } else if (pedido.status_confirmacao === 'preparo') { %>
+                                <i class="fas fa-fire status-icon preparo-icon"></i>
+                            <% } else if (pedido.status_confirmacao === 'entrega') { %>
+                                <i class="fas fa-motorcycle status-icon entrega-icon"></i>
+                            <% } else if (pedido.status_confirmacao === 'concluido') { %>
+                                <i class="fas fa-check-circle status-icon concluido-icon"></i>
+                            <% } %>
+                            Pedido <span class="pedido-numero">#<%= pedido.id %></span>
+                        </h3>
+                        <div class="status-controls">
+                            <select class="status-select" onchange="atualizarStatus('<%= pedido.id %>', this.value)">
+                                <option value="pendente" <%= pedido.status_confirmacao === 'pendente' ? 'selected' : '' %>>
+                                    <i class="fas fa-hourglass-half"></i> Pendente
+                                </option>
+                                <option value="preparo" <%= pedido.status_confirmacao === 'preparo' ? 'selected' : '' %>>
+                                    <i class="fas fa-fire"></i> Em Preparo
+                                </option>
+                                <option value="entrega" <%= pedido.status_confirmacao === 'entrega' ? 'selected' : '' %>>
+                                    <i class="fas fa-motorcycle"></i> Em Entrega
+                                </option>
+                                <option value="concluido" <%= pedido.status_confirmacao === 'concluido' ? 'selected' : '' %>>
+                                    <i class="fas fa-check-circle"></i> Concluído
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="pedido-detalhes">
+                        <% if (pedido.itens && Array.isArray(pedido.itens) && pedido.itens.length > 0) { %>
+                            <div class="produtos-lista">
+                                <h4>Itens do Pedido:</h4>
+                                <ul>
+                                    <% pedido.itens.forEach(item => { %>
+                                        <% if (item.produto) { %>
+                                            <li class="produto-item">
+                                                <% if (item.produto.imagem) { %>
+                                                    <div class="produto-imagem">
+                                                        <img src="/uploads/<%= item.produto.imagem %>" alt="<%= item.produto.nome %>">
+                                                    </div>
+                                                <% } else { %>
+                                                    <div class="produto-imagem">
+                                                        <i class="fas fa-utensils no-imagem"></i>
+                                                    </div>
+                                                <% } %>
+                                                <div class="produto-detalhes">
+                                                    <div class="produto-nome-preco">
+                                                        <span class="produto-nome"><%= item.produto.nome %></span>
+                                                        <span class="produto-preco">
+                                                            R$ <%= item.produto.preco ? item.produto.preco.toFixed(2) : "0.00" %>
+                                                        </span>
+                                                    </div>
+                                                    <% if (item.produto.descricao) { %>
+                                                        <p class="produto-descricao"><%= item.produto.descricao %></p>
+                                                    <% } %>
+                                                    <div class="produto-quantidade">
+                                                        <span class="quantidade-label">Quantidade:</span>
+                                                        <span class="quantidade-valor"><%= item.quantidade %></span>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        <% } %>
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% } else { %>
+                            <p>Nenhum item encontrado no pedido.</p>
+                        <% } %>
+                        <div class="cliente-info">
+                            <% if (pedido.nome_cliente) { %>
+                                <p><i class="fas fa-user"></i> <strong>Cliente:</strong> <%= pedido.nome_cliente %></p>
+                            <% } %>
+                            <% if (pedido.telefone) { %>
+                                <p><i class="fas fa-phone"></i> <strong>Telefone:</strong> <%= pedido.telefone %></p>
+                            <% } %>
+                            <% if (pedido.endereco) { %>
+                                <p><i class="fas fa-map-marker-alt"></i> <strong>Endereço:</strong> <%= pedido.endereco %></p>
+                            <% } %>
+                            <% if (pedido.tipo_entrega) { %>
+                                <p>
+                                    <i class="<%= pedido.tipo_entrega === 'retirada' ? 'fas fa-store' : 'fas fa-motorcycle' %>"></i> 
+                                    <strong>Entrega:</strong> <%= pedido.tipo_entrega === 'retirada' ? 'Retirada no local' : 'Entrega' %>
+                                </p>
+                            <% } %>
+                        </div>
+                        <div class="pedido-info">
+                            <p><strong>Total:</strong> R$ <%= typeof pedido.total === 'number' ? pedido.total.toFixed(2) : (pedido.total || 'N/A') %></p>
+                            <p>
+                                <i class="fas fa-clock horario-icon"></i> <strong>Horário:</strong> <%= pedido.hora_pedido %> 
+                                <span class="tempo-decorrido" data-timestamp="<%= pedido.data_criacao || '' %>">
+                                    <% if (pedido.data_criacao) { %>
+                                        <span class="contador">Calculando...</span>
+                                    <% } %>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="pedido-card">
+                <p>Não há pedidos no momento.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        document.getElementById('filtroStatus').addEventListener('change', function() {
+            const status = this.value;
+            const cards = document.querySelectorAll('.pedido-card');
+            
+            cards.forEach(card => {
+                if (status === 'todos' || card.dataset.status === status) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Função para atualizar o contador de pedidos por status
+        function atualizarContadorStatus() {
+            const cards = document.querySelectorAll('.pedido-card');
+            let pendentes = 0;
+            let preparo = 0;
+            let entrega = 0;
+            let concluidos = 0;
+            
+            cards.forEach(card => {
+                const status = card.dataset.status;
+                if (status === 'pendente') pendentes++;
+                if (status === 'preparo') preparo++;
+                if (status === 'entrega') entrega++;
+                if (status === 'concluido') concluidos++;
+            });
+            
+            // Atualizar os contadores nos filtros
+            const filtroStatus = document.getElementById('filtroStatus');
+            if (filtroStatus) {
+                const options = filtroStatus.options;
+                
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === 'pendente') {
+                        options[i].text = `Pendentes (${pendentes})`;
+                    } else if (options[i].value === 'preparo') {
+                        options[i].text = `Em Preparo (${preparo})`;
+                    } else if (options[i].value === 'entrega') {
+                        options[i].text = `Em Entrega (${entrega})`;
+                    } else if (options[i].value === 'concluido') {
+                        options[i].text = `Concluídos (${concluidos})`;
+                    }
+                }
+            }
+        }
+        
+        // Chamar a função ao carregar a página
+        atualizarContadorStatus();
+        
+        async function atualizarStatus(pedidoId, novoStatus) {
+            try {
+                console.log(`Atualizando pedido ${pedidoId} para status: ${novoStatus}`);
+                const response = await fetch(`/api/pedidos/${pedidoId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: novoStatus })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao atualizar status');
+                }
+
+                const result = await response.json();
+                
+                // Atualizar a UI após sucesso
+                const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
+                if (card) {
+                    card.dataset.status = novoStatus;
+                    // Adiciona uma classe temporária para feedback visual
+                    card.classList.add('status-atualizado');
+                    setTimeout(() => {
+                        card.classList.remove('status-atualizado');
+                    }, 2000);
+                    
+                    // Atualizar o ícone de status após alteração
+                    const statusIcon = card.querySelector('.status-icon');
+                    if (statusIcon) {
+                        statusIcon.className = 'status-icon'; // Reset classes
+                        if (novoStatus === 'pendente') {
+                            statusIcon.classList.add('fas', 'fa-hourglass-half', 'pendente-icon');
+                        } else if (novoStatus === 'preparo') {
+                            statusIcon.classList.add('fas', 'fa-fire', 'preparo-icon');
+                        } else if (novoStatus === 'entrega') {
+                            statusIcon.classList.add('fas', 'fa-motorcycle', 'entrega-icon');
+                        } else if (novoStatus === 'concluido') {
+                            statusIcon.classList.add('fas', 'fa-check-circle', 'concluido-icon');
+                        }
+                    }
+                    
+                    // Atualizar contadores
+                    atualizarContadorStatus();
+                }
+                
+                console.log(`Status do pedido ${pedidoId} atualizado com sucesso para: ${novoStatus}`);
+            } catch (error) {
+                console.error('Erro:', error);
+                alert(`Erro ao atualizar status do pedido: ${error.message}`);
+            }
+        }
+
+        // Função para atualizar o tempo decorrido em todos os contadores
+        function atualizarTempoDecorrido() {
+            const contadores = document.querySelectorAll('.tempo-decorrido');
+            
+            contadores.forEach(contador => {
+                const timestamp = contador.dataset.timestamp;
+                if (!timestamp) return;
+                
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                
+                if (isNaN(diffMins)) return;
+                
+                const contadorElement = contador.querySelector('.contador');
+                if (!contadorElement) return;
+                
+                let texto = '';
+                if (diffMins < 60) {
+                    texto = `há ${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+                } else if (diffMins < 1440) {
+                    const hours = Math.floor(diffMins / 60);
+                    texto = `há ${hours} hora${hours !== 1 ? 's' : ''}`;
+                } else {
+                    const days = Math.floor(diffMins / 1440);
+                    texto = `há ${days} dia${days !== 1 ? 's' : ''}`;
+                }
+                
+                contadorElement.textContent = `(${texto})`;
+            });
+        }
+        
+        // Atualiza inicialmente
+        atualizarTempoDecorrido();
+        
+        // Atualiza a cada minuto
+        setInterval(atualizarTempoDecorrido, 60000);
+    </script>
+</body>
+</html>
