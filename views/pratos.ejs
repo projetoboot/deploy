@@ -1,161 +1,216 @@
+<%- include('header') %>
+<link rel="stylesheet" href="/css/dashboard.css">
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4">Gerenciar Pratos</h2>
-            
-            <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-                <div class="alert alert-success"><%= success[0] %></div>
-            <% } %>
-            
-            <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-                <div class="alert alert-danger"><%= error[0] %></div>
-            <% } %>
+<!-- Conteúdo Principal -->
+<div class="conteudo-principal">
+    <div class="card-header-principal">
+      
+        <a href="/dashboard/pratos/novo" class="btn-adicionar">
+            <i class="fas fa-plus"></i> Adicionar Novo Prato
+        </a>
+    </div>
 
-            <div class="mb-4">
-                <a href="/dashboard/pratos/novo" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Adicionar Novo Prato
-                </a>
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+        <div class="alerta alerta-sucesso">
+            <i class="fas fa-check-circle"></i>
+            <%= success[0] %>
+        </div>
+    <% } %>
+    
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+        <div class="alerta alerta-erro">
+            <i class="fas fa-exclamation-circle"></i>
+            <%= error[0] %>
+        </div>
+    <% } %>
+
+    <% if (pratos && pratos.length > 0) { %>
+        <!-- Visualização Desktop -->
+        <div class="card-conteudo d-none d-md-block">
+            <div class="tabela-responsiva">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th>
+                                <span data-bs-toggle="tooltip" data-bs-placement="top" title="Arraste para mudar a ordem no cardápio">
+                                    <i class="fas fa-sort"></i> Ordem
+                                </span>
+                            </th>
+                            <th>Imagem</th>  
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Categoria</th>
+                            <th>Disponível</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sortable-dishes">
+                        <% pratos.forEach(prato => { %>
+                            <tr data-id="<%= prato.id %>">
+                                <td class="drag-handle">
+                                    <div class="arraste-item">
+                                        <i class="fas fa-grip-vertical"></i>
+                                        <small>Arraste para ordenar</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="imagem-prato">
+                                        <% if (prato.imagem) { %>
+                                            <img src="/uploads/<%= prato.imagem %>" alt="<%= prato.nome %>">
+                                        <% } else { %>
+                                            <img src="/img/no-image.png" alt="Sem imagem">
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td><strong><%= prato.nome %></strong></td>
+                                <td class="descricao"><%= prato.descricao %></td>
+                                <td>
+                                    <span class="preco-badge price-display" data-id="<%= prato.id %>" data-price="<%= prato.preco_base || prato.preco %>">
+                                        R$ <%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>
+                                    </span>
+                                    <div class="preco-edit price-edit">
+                                        <div class="input-grupo">
+                                            <span>R$</span>
+                                            <input type="text" class="price-input" value="<%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>">
+                                            <button class="btn-icon btn-save-price"><i class="fas fa-check"></i></button>
+                                            <button class="btn-icon btn-cancel-price"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <% const categoryIcons = {
+                                        'Brasileira': '🇧🇷',
+                                        'Lanches': '🍔',
+                                        'Pizzas': '🍕',
+                                        'Italiana': '🍝',
+                                        'Japonesa': '🍱',
+                                        'Chinesa': '🥢',
+                                        'Árabe': '🥙',
+                                        'Mexicana': '🌮',
+                                        'Marmitas': '🥡',
+                                        'Vegetariana': '🥗',
+                                        'Fit': '💪',
+                                        'Açaí': '🍇',
+                                        'Padaria': '🥖',
+                                        'Pastel': '🥟',
+                                        'Sorvetes': '🍨',
+                                        'Espetinhos': '🍖',
+                                        'Bebidas': '🥤',
+                                        'Porções': '🍟',
+                                        'Combos': '📦',
+                                        'Outros': '✨'
+                                    };
+                                    const icon = categoryIcons[prato.categoria] || '🔍'; %>
+                                    <span class="categoria-badge">
+                                        <%= icon %> <%= prato.categoria || 'Sem categoria' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge <%= prato.disponivel ? 'disponivel' : 'indisponivel' %> toggle-disponivel" 
+                                          data-id="<%= prato.id %>"
+                                          data-disponivel="<%= prato.disponivel %>">
+                                        <%= prato.disponivel ? 'Sim' : 'Não' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="acoes-grupo">
+                                        <a href="/dashboard/pratos/editar/<%= prato.id %>" class="btn-acao btn-editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn-acao btn-excluir" data-id="<%= prato.id %>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
             </div>
+        </div>
 
-            <% if (pratos && pratos.length > 0) { %>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Imagem</th>  
-                                        <th>Nome</th>
-                                        <th>Descrição</th>
-                                        <th>Preço</th>
-                                        <th>Categoria</th>
-                                        <th>Disponível</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% pratos.forEach(prato => { %>
-                                        <tr>
-                                            <td>
-                                                <% if (prato.imagem) { %>
-                                                    <img src="/uploads/<%= prato.imagem %>" alt="<%= prato.nome %>" 
-                                                         style="max-width: 80px; height: auto;" 
-                                                         class="img-thumbnail shadow-sm">
-                                                <% } else { %>
-                                                    <img src="/img/no-image.png" alt="Sem imagem" 
-                                                         style="max-width: 80px; height: auto;" 
-                                                         class="img-thumbnail shadow-sm">
-                                                <% } %>
-                                            </td>
-                                            <td class="align-middle"><strong><%= prato.nome %></strong></td>
-                                            <td class="align-middle text-muted"><%= prato.descricao %></td>
-                                            <td class="align-middle">
-                                                <span class="badge bg-info text-dark price-display" 
-                                                      style="cursor: pointer;" 
-                                                      data-id="<%= prato.id %>"
-                                                      data-price="<%= prato.preco_base || prato.preco %>">
-                                                    R$ <%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>
-                                                </span>
-                                                <div class="input-group input-group-sm price-edit" style="display: none; width: 150px;">
-                                                    <span class="input-group-text">R$</span>
-                                                    <input type="text" class="form-control price-input" 
-                                                           value="<%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>">
-                                                    <button class="btn btn-success btn-save-price"><i class="fas fa-check"></i></button>
-                                                    <button class="btn btn-danger btn-cancel-price"><i class="fas fa-times"></i></button>
-                                                </div>
-                                            </td>
-                                            <td class="align-middle">
-                                                <% const categoryIcons = {
-                                                    'Brasileira': '🇧🇷',
-                                                    'Lanches': '🍔',
-                                                    'Pizzas': '🍕',
-                                                    'Italiana': '🍝',
-                                                    'Japonesa': '🍱',
-                                                    'Chinesa': '🥢',
-                                                    'Árabe': '🥙',
-                                                    'Mexicana': '🌮',
-                                                    'Marmitas': '🥡',
-                                                    'Vegetariana': '🥗',
-                                                    'Fit': '💪',
-                                                    'Açaí': '🍇',
-                                                    'Padaria': '🥖',
-                                                    'Pastel': '🥟',
-                                                    'Sorvetes': '🍨',
-                                                    'Espetinhos': '🍖',
-                                                    'Bebidas': '🥤',
-                                                    'Porções': '🍟',
-                                                    'Combos': '📦',
-                                                    'Outros': '✨'
-                                                };
-                                                const icon = categoryIcons[prato.categoria] || '🔍'; %>
-                                                <span class="badge bg-light text-dark">
-                                                    <%= icon %> <%= prato.categoria || 'Sem categoria' %>
-                                                </span>
-                                            </td>
-                                            <td class="align-middle">
-                                                <span class="badge <%= prato.disponivel ? 'bg-success' : 'bg-danger' %> toggle-disponivel" 
-                                                      style="cursor: pointer;"
-                                                      data-id="<%= prato.id %>"
-                                                      data-disponivel="<%= prato.disponivel %>">
-                                                    <%= prato.disponivel ? 'Sim' : 'Não' %>
-                                                </span>
-                                            </td>
-                                            <td class="align-middle">
-                                                <div class="btn-group">
-                                                    <a href="/dashboard/pratos/editar/<%= prato.id %>" 
-                                                       class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-edit"></i> Editar
-                                                    </a>
-                                                    <button class="btn btn-sm btn-outline-danger btn-excluir" 
-                                                            data-id="<%= prato.id %>">
-                                                        <i class="fas fa-trash-alt"></i> Excluir
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <% }); %>
-                                </tbody>
-                            </table>
+        <!-- Visualização Mobile -->
+        <div class="cards-mobile d-md-none">
+            <div id="sortable-dishes-mobile" class="grid-cards">
+                <% pratos.forEach(prato => { %>
+                    <div class="card-prato" data-id="<%= prato.id %>">
+                        <div class="drag-handle-mobile">
+                            <i class="fas fa-grip-vertical"></i>
+                        </div>
+                        <div class="card-prato-conteudo">
+                            <div class="prato-imagem">
+                                <% if (prato.imagem) { %>
+                                    <img src="/uploads/<%= prato.imagem %>" alt="<%= prato.nome %>">
+                                <% } else { %>
+                                    <img src="/img/no-image.png" alt="Sem imagem">
+                                <% } %>
+                            </div>
+                            <div class="prato-info">
+                                <h3><%= prato.nome %></h3>
+                                <p class="descricao"><%= prato.descricao %></p>
+                                
+                                <div class="prato-detalhes">
+                                    <span class="preco-badge price-display" data-id="<%= prato.id %>" data-price="<%= prato.preco_base || prato.preco %>">
+                                        R$ <%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>
+                                    </span>
+                                    
+                                    <span class="status-badge <%= prato.disponivel ? 'disponivel' : 'indisponivel' %> toggle-disponivel"
+                                          data-id="<%= prato.id %>"
+                                          data-disponivel="<%= prato.disponivel %>">
+                                        <%= prato.disponivel ? 'Disponível' : 'Indisponível' %>
+                                    </span>
+                                </div>
+
+                                <div class="acoes-grupo">
+                                    <a href="/dashboard/pratos/editar/<%= prato.id %>" class="btn-acao btn-editar">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    <button class="btn-acao btn-excluir" data-id="<%= prato.id %>">
+                                        <i class="fas fa-trash-alt"></i> Excluir
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            <% } else { %>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Nenhum prato cadastrado. 
-                    Clique em "Adicionar Novo Prato" para começar.
-                </div>
-            <% } %>
+                <% }); %>
+            </div>
         </div>
-    </div>
-</div>
+    <% } else { %>
+        <div class="alerta alerta-info">
+            <i class="fas fa-info-circle"></i>
+            Nenhum prato cadastrado. Clique em "Adicionar Novo Prato" para começar.
+        </div>
+    <% } %>
 
-<!-- Modal de confirmação de exclusão -->
-<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+
+<!-- Modal de confirmação -->
+<div class="modal-overlay" id="modalConfirmacao">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h5>
+                <i class="fas fa-exclamation-triangle"></i> 
+                Confirmar Exclusão
+            </h5>
+            <button class="btn-fechar" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle text-danger"></i> 
-                    Confirmar Exclusão
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir este prato? Esta ação não pode ser desfeita.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">
-                    <i class="fas fa-trash-alt"></i> Excluir
-                </button>
-            </div>
+            <p>Tem certeza que deseja excluir este prato? Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secundario" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn-perigo" id="btnConfirmarExclusao">
+                <i class="fas fa-trash-alt"></i> Excluir
+            </button>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
@@ -168,11 +223,38 @@
             });
         });
         
-        document.getElementById('btnConfirmarExclusao').addEventListener('click', function() {
+        document.getElementById('btnConfirmarExclusao').addEventListener('click', async function() {
             if (pratoIdParaExcluir) {
-                window.location.href = `/dashboard/pratos/excluir/${pratoIdParaExcluir}`;
+                try {
+                    const response = await fetch(`/dashboard/pratos/excluir/${pratoIdParaExcluir}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        // Remove the row from the table
+                        const row = document.querySelector(`tr[data-id="${pratoIdParaExcluir}"]`);
+                        if (row) row.remove();
+                        
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success';
+                        alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Prato excluído com sucesso!';
+                        document.querySelector('.col-12').insertBefore(alertDiv, document.querySelector('.mb-4'));
+                        
+                        // Auto-hide the alert after 3 seconds
+                        setTimeout(() => alertDiv.remove(), 3000);
+                    } else {
+                        throw new Error('Erro ao excluir o prato');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                    alert('Erro ao excluir o prato. Tente novamente.');
+                }
+                modal.hide();
             }
-            modal.hide();
         });
     });
 
@@ -268,3 +350,123 @@
 </script>
 
 <%- include('footer') %>
+
+<!-- Add this script at the bottom of the file, before the closing </script> tag -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar Sortable para desktop (existente)
+        const tbody = document.getElementById('sortable-dishes');
+        if (tbody) {
+            new Sortable(tbody, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: handleReorder
+            });
+        }
+
+        // Inicializar Sortable para mobile
+        const mobileContainer = document.getElementById('sortable-dishes-mobile');
+        if (mobileContainer) {
+            new Sortable(mobileContainer, {
+                handle: '.drag-handle-mobile',
+                animation: 150,
+                onEnd: handleReorder
+            });
+        }
+
+        // Função unificada para lidar com reordenação
+        async function handleReorder(evt) {
+            const container = evt.to;
+            const items = Array.from(container.children);
+            const newOrder = items.map((item, index) => ({
+                id: item.dataset.id,
+                ordem: index
+            }));
+
+            try {
+                const response = await fetch('/dashboard/pratos/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ordem: newOrder })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao atualizar ordem');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao salvar a nova ordem dos pratos');
+            }
+        }
+    });
+</script>
+
+<style>
+    .drag-handle {
+        cursor: move;
+        padding: 8px;
+        text-align: center;
+    }
+    
+    .drag-handle i {
+        transition: color 0.2s ease;
+    }
+    
+    .drag-handle:hover i {
+        color: #0d6efd !important;
+    }
+    
+    .table tbody tr.dragging .drag-handle i {
+        color: #0d6efd !important;
+    }
+
+    /* Estilos para visualização mobile */
+    @media (max-width: 767.98px) {
+        .drag-handle-mobile {
+            cursor: move;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            border: 1px solid rgba(0,0,0,.125);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .object-fit-cover {
+            object-fit: cover;
+        }
+    }
+
+    /* Sobrescrever comportamento do Bootstrap para .row>* */
+    .container-fluid .row > * {
+        flex-shrink: initial;
+        width: auto;
+        max-width: none;
+        padding-right: 15px;
+        padding-left: 15px;
+        margin-top: 0;
+    }
+    
+    /* Garantir que a coluna ocupe todo o espaço em telas pequenas */
+    @media (max-width: 767.98px) {
+        .container-fluid .row > .col-12 {
+            width: 100%;
+            padding-right: 10px;
+            padding-left: 10px;
+        }
+    }
+</style>

@@ -50,7 +50,7 @@ class Carrinho {
         const precoBase = Number(produto.preco) || 0;
         const precoTotal = precoBase * quantidade;
 
-        // Calcular o preço dos opcionais
+        // Calcular o preço dos opcionais multiplicando pela quantidade
         const precoOpcionais = Array.isArray(opcionaisSelecionados) ? 
             opcionaisSelecionados.reduce((total, opcional) => {
                 const precoOpcional = Number(opcional.preco) || 0;
@@ -172,19 +172,27 @@ class Carrinho {
             listaCarrinho.innerHTML = this.items.map((item, index) => `
                 <div class="carrinho-item">
                     <div class="carrinho-item-info">
+                    <div class="carrinho-item-info-img">
                         <img src="/uploads/${item.produto.imagem || 'default.jpg'}" alt="${item.produto.nome}" class="produto-imagem_mini">
-                        <h4>${item.produto.nome}</h4>
+                    </div>    <h4>${item.produto.nome}</h4>
+                     ${item.opcionaisSelecionados.length > 0 ? `
+                            <small>
+                                Opcionais: ${item.opcionaisSelecionados.map(op => op.nome).join(', ')}
+                            </small>
+                        ` : ''}
+                       
+                       
+                    </div>
+                     <div class="carrinho-item-acoes">
                         <div class="quantidade-controle">
                             <button class="quantidade-btn diminuir" data-index="${index}">-</button>
                             <span class="quantidade">${item.quantidade}</span>
                             <button class="quantidade-btn aumentar" data-index="${index}">+</button>
                         </div>
-                        ${item.opcionaisSelecionados.length > 0 ? `
-                            <small>
-                                Opcionais: ${item.opcionaisSelecionados.map(op => op.nome).join(', ')}
-                            </small>
-                        ` : ''}
                     </div>
+
+
+
                     <div class="carrinho-item-acoes">
                         <div class="carrinho-item-preco">
                             R$ ${this.calcularPrecoItem(item.produto, item.quantidade, item.opcionaisSelecionados).toFixed(2)}
@@ -256,13 +264,48 @@ class CardapioUI {
     configurarTiposEntrega() {
         const tipoEntregaInputs = document.querySelectorAll('input[name="tipo-entrega"]');
         const enderecoEntrega = document.querySelector('.endereco-entrega');
+        const complementoContainer = document.getElementById('endereco-completo');
+        const telefoneContainer = document.querySelector('.cliente-telefone-container');
+        const finalizarBtn = document.querySelector('.finalizar-pedido-btn');
         
         if (!tipoEntregaInputs.length || !enderecoEntrega) return;
+        
+        // Função para mostrar/ocultar campos dependentes
+        const toggleCamposDependentes = (mostrar) => {
+            if (complementoContainer) complementoContainer.style.display = mostrar ? 'block' : 'none';
+            if (telefoneContainer) telefoneContainer.style.display = mostrar ? 'block' : 'none';
+            if (finalizarBtn) finalizarBtn.style.display = mostrar ? 'block' : 'none';
+        };
+
+        // Configurar o evento de mudança no campo de endereço principal
+        const enderecoPrincipal = document.getElementById('endereco-autocomplete');
+        if (enderecoPrincipal) {
+            enderecoPrincipal.addEventListener('input', function() {
+                const isEntrega = document.querySelector('input[name="tipo-entrega"]:checked')?.value === 'entrega';
+                if (isEntrega) {
+                    toggleCamposDependentes(this.value.trim().length > 0);
+                }
+            });
+        }
         
         tipoEntregaInputs.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 console.log(`🛵 Tipo de entrega alterado: ${e.target.value}`);
-                enderecoEntrega.style.display = e.target.value === 'entrega' ? 'block' : 'none';
+                const isEntrega = e.target.value === 'entrega';
+                
+                enderecoEntrega.style.display = isEntrega ? 'block' : 'none';
+                
+                if (isEntrega) {
+                    // Se for entrega, inicialmente oculta os campos dependentes
+                    toggleCamposDependentes(false);
+                    // Verifica se já tem endereço preenchido
+                    if (enderecoPrincipal && enderecoPrincipal.value.trim().length > 0) {
+                        toggleCamposDependentes(true);
+                    }
+                } else {
+                    // Se não for entrega, mostra todos os campos
+                    toggleCamposDependentes(true);
+                }
             });
         });
     }
@@ -280,29 +323,190 @@ class CardapioUI {
                     opcionais: JSON.parse(card.dataset.opcionais || '[]')
                 };
                 console.log("Produto selecionado:", produto);
-                this.abrirModal(produto);
+                this.expandirProduto(card, produto);
+
+
+             imagem.addEventListener('click', () => {
+    card.classList.toggle('expandido');
+    detalhes.classList.toggle('ativo');
+    
+    // Adicionar esta linha para ocultar/mostrar o header
+    document.querySelector('.header').classList.toggle('header-hidden');
+});   
             });
         });
     }
 
-    configurarModal() {
-        const modal = document.getElementById('modalProduto');
-        const closeBtn = modal.querySelector('.modal-close');
-        const addBtn = modal.querySelector('.adicionar-carrinho-btn');
-        const diminuirBtn = modal.querySelector('.diminuir');
-        const aumentarBtn = modal.querySelector('.aumentar');
+    expandirProduto(card, produto) {
+        // Remove a classe expandido de todos os outros cards
+        document.querySelectorAll('.produto-card.expandido').forEach(expandedCard => {
+            if (expandedCard !== card) {
+                expandedCard.classList.remove('expandido');
+                const detalhes = expandedCard.querySelector('.produto-detalhes');
+                if (detalhes) detalhes.remove();
+            }
+        });
+    
+        // Alterna o estado expandido do card clicado
+        if (card.classList.contains('expandido')) {
 
-        closeBtn.addEventListener('click', () => this.fecharModal());
-        addBtn.addEventListener('click', () => this.adicionarAoCarrinho());
-        diminuirBtn.addEventListener('click', () => this.alterarQuantidade(-1));
-        aumentarBtn.addEventListener('click', () => this.alterarQuantidade(1));
+            // No evento de clique da imagem
+            imagem.addEventListener('click', () => {
+                card.classList.toggle('expandido');
+                detalhes.classList.toggle('ativo');
+                
+                // Adicionar esta linha para ocultar/mostrar o header
+                document.querySelector('.header').classList.toggle('header-hidden');
+            });
+            card.classList.remove('expandido');
+            const detalhes = card.querySelector('.produto-detalhes');
+            if (detalhes) detalhes.remove();
+        } else {
+            card.classList.add('expandido');
+            
+            // Cria a seção de detalhes
+            const detalhes = document.createElement('div');
+            detalhes.className = 'produto-detalhes';
+            
+            // Adiciona os controles de quantidade
+            const quantidadeControle = document.createElement('div');
+            quantidadeControle.className = 'quantidade-controle';
+            quantidadeControle.innerHTML = `
+                <button class="quantidade-btn diminuir" type="button">-</button>
+                <input type="number" class="quantidade-input" value="1" min="1" max="10" readonly>
+                <button class="quantidade-btn aumentar" type="button">+</button>
+            `;
+            
+            // Adiciona os opcionais se existirem
+            let opcionaisHTML = '';
+            if (produto.opcionais && produto.opcionais.length > 0) {
+                opcionaisHTML = `
+                    <div class="opcionais-container">
+                        <h4>Opcionais</h4>
+                        <div class="opcionais-lista">
+                            ${produto.opcionais.map(opcional => {
+                                const preco = Number(opcional.preco_adicional) || 0;
+                                return `
+                                    <div class="opcional-item">
+                                        <div class="opcional-info" onclick="event.stopPropagation();">
+                                            <input type="checkbox" 
+                                                   class="opcional-checkbox" 
+                                                   data-nome="${opcional.nome}"
+                                                   data-preco="${preco}">
+                                            <label>${opcional.nome}</label>
+                                        </div>
+                                        <span class="opcional-preco">+R$ ${preco.toFixed(2)}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Adiciona o botão de adicionar ao carrinho
+            const addButton = document.createElement('button');
+            addButton.className = 'adicionar-carrinho-btn';
+            addButton.textContent = 'Adicionar ao Carrinho';
+            
+            // Monta a estrutura completa dos detalhes
+            detalhes.innerHTML = `
+                ${quantidadeControle.outerHTML}
+                ${opcionaisHTML}
+                ${addButton.outerHTML}
+            `;
+            
+            // Adiciona os detalhes ao card
+            card.appendChild(detalhes);
+            
+            // Configura os eventos dos controles
+            const input = detalhes.querySelector('.quantidade-input');
+            const diminuirBtn = detalhes.querySelector('.diminuir');
+            const aumentarBtn = detalhes.querySelector('.aumentar');
+            
+            if (diminuirBtn) {
+                diminuirBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentValue = Number(input.value);
+                    if (currentValue > 1) {
+                        input.value = currentValue - 1;
+                    }
+                });
+            }
+            
+            if (aumentarBtn) {
+                aumentarBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentValue = Number(input.value);
+                    if (currentValue < 10) {
+                        input.value = currentValue + 1;
+                    }
+                });
+            }
+            
+            // Função para atualizar o preço no botão
+            const atualizarPrecoBotao = () => {
+                const quantidade = Number(input.value);
+                const opcionaisSelecionados = Array.from(detalhes.querySelectorAll('.opcional-checkbox:checked')).map(checkbox => ({
+                    nome: checkbox.dataset.nome,
+                    preco: Number(checkbox.dataset.preco)
+                }));
+                
+                const precoTotal = this.carrinho.calcularPrecoItem(produto, quantidade, opcionaisSelecionados);
+                const opcionaisTexto = opcionaisSelecionados.length > 0 
+                    ? ` + ${quantidade} complementos` 
+                    : '';
+                
+                addToCartBtn.textContent = `Adicionar ao Carrinho   R$ ${precoTotal.toFixed(2)}`;
+            };
+
+            // Configura o evento do botão adicionar ao carrinho
+            const addToCartBtn = detalhes.querySelector('.adicionar-carrinho-btn');
+            if (addToCartBtn) {
+                // Atualiza o preço inicial
+                atualizarPrecoBotao();
+
+                // Adiciona listeners para atualizar o preço
+                input.addEventListener('change', atualizarPrecoBotao);
+                detalhes.querySelectorAll('.opcional-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', atualizarPrecoBotao);
+                });
+                diminuirBtn.addEventListener('click', atualizarPrecoBotao);
+                aumentarBtn.addEventListener('click', atualizarPrecoBotao);
+
+                addToCartBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const quantidade = Number(input.value);
+                    const opcionaisSelecionados = Array.from(detalhes.querySelectorAll('.opcional-checkbox:checked')).map(checkbox => ({
+                        nome: checkbox.dataset.nome,
+                        preco: Number(checkbox.dataset.preco)
+                    }));
+                    
+                    this.carrinho.adicionarItem(produto, quantidade, opcionaisSelecionados);
+                    card.classList.remove('expandido');
+                    detalhes.remove();
+                });
+            }
+        }
+    }
+
+    configurarModal() {
+        // O modal foi removido, agora os detalhes são exibidos na própria div do produto
+        // Esta função é mantida para compatibilidade, mas não precisa mais configurar o modal
+        console.log('Modal de produto removido - usando exibição inline');
     }
 
     configurarCarrinho() {
         // Configurar botão do carrinho flutuante
         const carrinhoBtn = document.querySelector('.carrinho-nav-btn');
+        const carrinhoIcone = document.querySelector('.carrinho-header');
+        
         if (carrinhoBtn) {
             carrinhoBtn.addEventListener('click', () => this.abrirModalCarrinho());
+        }
+        
+        if (carrinhoIcone) {
+            carrinhoIcone.addEventListener('click', () => this.abrirModalCarrinho());
         }
 
         // Configurar modal do carrinho
@@ -505,15 +709,29 @@ class CardapioUI {
             }
             
             // Verificar endereço se for entrega
-            const enderecoEntrega = tipoEntrega === 'entrega' ? 
-                document.querySelector('.endereco-entrega textarea')?.value?.trim() : '';
+            const enderecoPrincipal = document.getElementById('endereco-autocomplete')?.value?.trim() || '';
+            const enderecoComplemento = document.getElementById('endereco-completo')?.value?.trim() || '';
             
-            if (tipoEntrega === 'entrega' && (!enderecoEntrega || enderecoEntrega.length < 5)) {
-                alert('Por favor, informe um endereço válido para entrega');
-                document.querySelector('.endereco-entrega textarea').focus();
-                return;
+            console.log("endereço principal:", enderecoPrincipal);
+            console.log("endereço complemento:", enderecoComplemento);
+            
+            if (tipoEntrega === 'entrega') {
+                // Verifica se ambos os campos estão vazios
+                if (!enderecoPrincipal ) {
+                    alert('Por favor, informe um endereço para entrega');
+                    document.getElementById('endereco-autocomplete').focus();
+                    return;
+                }
+                
+                // Verifica se o endereço principal está vazio
+               
             }
-            
+
+            // Combinar endereço principal e complemento para o pedido
+            const enderecoEntrega = tipoEntrega === 'entrega' ? 
+                `${enderecoPrincipal}${enderecoComplemento ? ` - ${enderecoComplemento}` : ''}` : '';
+
+          console.log("endereço de entraga pagina modal linha 695", enderecoEntrega);  
             // Obter e validar o número de telefone
             const telefone = document.getElementById('telefone-cliente')?.value?.trim();
             

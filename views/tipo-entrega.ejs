@@ -48,10 +48,20 @@
 
             <!-- Campo de endereço (visível apenas para delivery) -->
             <div class="endereco-entrega" style="display: none;">
+                <input 
+                    type="text"
+                    id="endereco-autocomplete"
+                    class="endereco-input"
+                    placeholder="Digite seu endereço"
+                    required
+                />
                 <textarea 
-                    placeholder="Digite seu endereço completo para entrega&#10;Ex: Rua, número, bairro, complemento, ponto de referência"
-                    rows="3"
+                    id="endereco-completo"
+                    placeholder="Complemento, número, ponto de referência"
+                    rows="2"
                 ></textarea>
+                <div id="mapa-endereco-selecionado">Nenhum endereço selecionado</div>
+                <button id="confirmar-endereco-btn" class="confirmar-endereco-btn" disabled>Confirmar este endereço</button>
             </div>
 
             <!-- Resumo do Pedido -->
@@ -107,10 +117,32 @@
     <!-- Scripts -->
     <script src="/js/cardapio.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-    <script src="/js/address-autocomplete.js"></script>
     <script>
-        // Carregar dados do carrinho ao iniciar a página
+        // Inicializar o autocomplete do endereço
+        function initAutocomplete() {
+            const input = document.getElementById('endereco-autocomplete');
+            const autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['address'],
+                componentRestrictions: { country: 'BR' }
+            });
+
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    document.getElementById('mapa-endereco-selecionado').textContent = 'Endereço inválido';
+                    document.getElementById('confirmar-endereco-btn').disabled = true;
+                    return;
+                }
+
+                document.getElementById('mapa-endereco-selecionado').textContent = place.formatted_address;
+                document.getElementById('confirmar-endereco-btn').disabled = false;
+            });
+        }
+
+        // Inicializar o autocomplete quando a página carregar
         window.onload = function() {
+            initAutocomplete();
+            // Código existente do carrinho
             const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
             const itensCarrinho = document.querySelector('.itens-carrinho');
             const valorTotal = document.querySelector('.valor-total');
@@ -121,7 +153,6 @@
                 itemElement.className = 'item-carrinho';
                 let itemTotal = item.preco * item.quantidade;
 
-                // Adicionar valor dos opcionais selecionados
                 if (item.opcionais && item.opcionais.length > 0) {
                     item.opcionais.forEach(opcional => {
                         itemTotal += opcional.preco * item.quantidade;
@@ -133,7 +164,6 @@
                     <span>R$ ${itemTotal.toFixed(2)}</span>
                 `;
 
-                // Adicionar opcionais selecionados como subitem
                 if (item.opcionais && item.opcionais.length > 0) {
                     const opcionaisElement = document.createElement('div');
                     opcionaisElement.className = 'item-opcionais';
@@ -145,23 +175,42 @@
                 total += itemTotal;
             });
 
-
             valorTotal.textContent = `R$ ${total.toFixed(2)}`;
         };
 
+        // Adicionar evento para o botão de confirmar endereço
+        document.getElementById('confirmar-endereco-btn').addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = 'Endereço confirmado';
+            document.getElementById('endereco-completo').focus();
+        });
+    </script>
+
+
         function finalizarPedido() {
             const tipoEntrega = document.querySelector('input[name="tipo-entrega"]:checked').value;
-            const endereco = document.querySelector('.endereco-entrega textarea').value;
+            const enderecoAutocomplete = document.querySelector('#endereco-autocomplete').value;
+            const enderecoCompleto = document.querySelector('#endereco-completo').value;
             
-            if (tipoEntrega === 'entrega' && !endereco.trim()) {
-                alert('Por favor, informe o endereço de entrega');
-                return;
+            if (tipoEntrega === 'entrega') {
+                if (!enderecoAutocomplete.trim()) {
+                    alert('Por favor, selecione um endereço válido');
+                    return;
+                }
+                if (!document.querySelector('#confirmar-endereco-btn').disabled) {
+                    alert('Por favor, confirme o endereço selecionado');
+                    return;
+                }
             }
+
+            const enderecoFinal = tipoEntrega === 'entrega' 
+                ? `${enderecoAutocomplete}${enderecoCompleto ? ` - ${enderecoCompleto}` : ''}`
+                : '';
 
             const pedido = {
                 itens: JSON.parse(localStorage.getItem('carrinho') || '[]'),
                 tipoEntrega: tipoEntrega,
-                endereco: endereco
+                endereco: enderecoFinal
             };
 
             // Aqui você pode adicionar a lógica para enviar o pedido para o servidor

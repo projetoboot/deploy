@@ -14,19 +14,22 @@
    <div class="header">
     <div class="header-content">
         <h1>Lanchonete Bot</h1>
-        <div class="carrinho-header">
-            <% if (carrinho && carrinho.length > 0) { %>
-                <div class="carrinho-info">
-                    <span class="carrinho-quantidade"><%= carrinho.length %></span>
-                    <span class="carrinho-total">
-                        R$ <%= carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2) %>
-                    </span>
-                </div>
-            <% } else { %>
-                <div class="carrinho-vazio">
-                   
-                </div>
-            <% } %>
+        <div class="header-right">
+            <i class="fas fa-search header-search-icon"></i>
+            <div class="carrinho-header">
+                <% if (carrinho && carrinho.length > 0) { %>
+                    <div class="carrinho-info">
+                        <span class="carrinho-quantidade"><%= carrinho.length %></span>
+                        <span class="carrinho-total">
+                            R$ <%= carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2) %>
+                        </span>
+                    </div>
+                <% } else { %>
+                    <div class="carrinho-vazio">
+                       
+                    </div>
+                <% } %>
+            </div>
         </div>
     </div>
 </div>
@@ -35,8 +38,8 @@
     <div class="search-bar">
         <i class="fas fa-search"></i>
         <input type="text" placeholder="Buscar pratos e restaurantes" id="searchInput">
-       
     </div>
+    <script src="/js/search-bar.js"></script>
 
     <!-- Navegação de Categorias -->
     <nav class="categorias-nav">
@@ -50,33 +53,12 @@
             <% 
             const categorias = [...new Set(cardapio.map(item => item.categoria))];
             categorias.forEach(categoria => { 
-                let icone = '';
-                switch(categoria) {
-                    case 'Lanches':
-                        icone = 'fas fa-burger';
-                        break;
-                    case 'Pizzas':
-                        icone = 'fas fa-pizza-slice';
-                        break;
-                    case 'Bebidas':
-                        icone = 'fas fa-martini-glass';
-                        break;
-                    case 'Sobremesas':
-                        icone = 'fas fa-ice-cream';
-                        break;
-                    case 'Acompanhamentos':
-                        icone = 'fas fa-bowl-food';
-                        break;
-                    case 'Oriental':
-                        icone = 'fas fa-bowl-rice';
-                        break;
-                    default:
-                        icone = 'fas fa-utensils';
-                }
+                const item = cardapio.find(p => p.categoria === categoria);
+                const icone = item.icone || 'fas fa-utensils';
             %>
                 <button class="categoria-btn" data-categoria="<%= categoria %>">
                     <div class="categoria-icon">
-                        <i class="<%= icone %>"></i>
+                        <img src="/images/icons/<%= categoria.toLowerCase() %>.png" alt="<%= categoria %>" class="categoria-icone" onerror="this.src='/images/icons/more.png'">
                     </div>
                     <span><%= categoria %></span>
                 </button>
@@ -108,36 +90,7 @@
         </div>
     </div>
 
-    <!-- Modal de Produto -->
-    <div class="modal" id="modalProduto">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title"></h3>
-                <button class="modal-close">&times;</button>
-            </div>
-           
-            <div class="modal-imagem">
-                <img src="" alt="" class="modal-produto-img">
-            </div>
-            <div class="modal-descricao">
-                <p class="produto-descricao-texto"></p>
-            </div>
-            <div class="quantidade-controle">
-                <button class="quantidade-btn diminuir">-</button>
-                <input type="number" class="quantidade-input" value="1" min="1" max="10" readonly>
-                <button class="quantidade-btn aumentar">+</button>
-            </div>
-           
-            <div class="opcionais-container">
-                <h4>Opcionais</h4>
-                <div class="opcionais-lista"></div>
-            </div>
-            <div class="modal-footer">
-                <div style="display: none;" class="total-preco"></div>
-                <button class="adicionar-carrinho-btn">Adicionar ao Carrinho</button>
-            </div>
-        </div>
-    </div>
+    <!-- Removido o modal de produto, agora os detalhes são exibidos na própria div do produto -->
 
     <!-- Modal do Carrinho -->
     <div class="modal" id="modalCarrinho">
@@ -245,11 +198,12 @@
 
     <!-- Navegação Inferior -->
     <nav class="nav-bottom">
+        <div class="caixa_nave"> 
         <a href="/" class="nav-item active">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        
+    </div>
         <a href="#" class="nav-item carrinho-nav-btn">
           <div class="categoria-icon-2"> </div>
             <div class="carrinho-icon-wrapper">
@@ -258,11 +212,11 @@
             </div>
             <span class="carrinho-total">R$ 0,00</span>
         </a>
-        
+        <div class="caixa_nave"> 
         <a href="/pedidos" class="nav-item">
             <i class="fas fa-file-alt"></i>
             <span>Pedidos</span>
-        </a>
+        </a> </div>
     </nav>
 
     <!-- Scripts -->

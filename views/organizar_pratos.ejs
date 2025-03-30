@@ -1,0 +1,121 @@
+<%- include('header') %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Organizar Cardápio</h3>
+                </div>
+                <div class="card-body">
+                    <div id="menu-organizador" class="list-group">
+                        <% pratos.forEach(prato => { %>
+                            <div class="list-group-item" data-id="<%= prato.id %>">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-grip-vertical me-3 handle"></i>
+                                    <img src="/uploads/<%= prato.imagem %>" class="menu-item-img me-3" alt="<%= prato.nome %>">
+                                    <div>
+                                        <h5 class="mb-1"><%= prato.nome %></h5>
+                                        <small class="text-muted"><%= prato.categoria %></small>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Visualização do Cardápio</h3>
+                </div>
+                <div class="card-body">
+                    <div id="menu-preview" class="produtos-grid">
+                        <% pratos.forEach(prato => { %>
+                            <div class="produto-card" data-id="<%= prato.id %>">
+                                <img src="/uploads/<%= prato.imagem %>" alt="<%= prato.nome %>" class="produto-imagem">
+                                <div class="produto-info">
+                                    <h3 class="produto-nome"><%= prato.nome %></h3>
+                                    <p class="produto-preco">R$ <%= typeof prato.preco === 'number' ? prato.preco.toFixed(2) : '0.00' %></p>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const menuOrganizador = document.getElementById('menu-organizador');
+    const menuPreview = document.getElementById('menu-preview');
+    
+    new Sortable(menuOrganizador, {
+        handle: '.handle',
+        animation: 150,
+        onEnd: function() {
+            updateOrder();
+            updatePreview();
+        }
+    });
+
+    function updateOrder() {
+        const items = menuOrganizador.querySelectorAll('.list-group-item');
+        const ordens = {};
+        
+        items.forEach((item, index) => {
+            ordens[item.dataset.id] = index;
+        });
+
+        fetch('/dashboard/pratos/atualizar-ordem', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ordens })
+        });
+    }
+
+    function updatePreview() {
+        const previewItems = Array.from(menuPreview.children);
+        const organizedItems = Array.from(menuOrganizador.children);
+        
+        organizedItems.forEach((item, index) => {
+            const previewItem = previewItems.find(p => p.dataset.id === item.dataset.id);
+            if (previewItem) {
+                menuPreview.appendChild(previewItem);
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.menu-item-img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.handle {
+    cursor: grab;
+    color: #666;
+}
+
+.handle:active {
+    cursor: grabbing;
+}
+
+#menu-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+</style>
+
+<%- include('footer') %>

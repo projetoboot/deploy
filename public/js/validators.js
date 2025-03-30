@@ -32,7 +32,7 @@ class UsernameValidator {
 
     async checkAvailability(username) {
         try {
-            const response = await fetch(`/check-username?username=${username}`);
+            const response = await fetch(`/dashboard/check-username?username=${username}`);
             const data = await response.json();
             this.loader.classList.add('d-none');
 
@@ -111,7 +111,7 @@ class PhoneValidator {
 
     async checkAvailability(phone) {
         try {
-            const response = await fetch(`/check-phone?phone=${phone}`);
+            const response = await fetch(`/dashboard/check-phone?phone=${phone}`);
             const data = await response.json();
             this.loader.classList.add('d-none');
 

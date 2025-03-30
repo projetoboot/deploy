@@ -6,273 +6,115 @@
     <title>Meus Pedidos - Lanchonete Bot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/cardapio.css">
-    <style>
-        .pedidos-lista {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-
-        .pedido-card {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            padding: 15px;
-        }
-
-        .pedido-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-        }
-
-        .pedido-status {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            background: #4CAF50;
-            color: white;
-        }
-
-        .pedido-info {
-            margin: 10px 0;
-        }
-
-        .pedido-total {
-            font-size: 1.2em;
-            font-weight: bold;
-            text-align: right;
-            margin-top: 10px;
-        }
-
-        .voltar-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .pedido-status {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            color: white;
-        }
-
-        .status-pendente {
-            background: #FF9800; /* Orange */
-        }
-
-        .status-entregue {
-            background: #4CAF50; /* Green */
-        }
-
-        .status-atrasado {
-            background: #f44336; /* Red */
-        }
-
-       
-    </style>
+    <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1>Meus Pedidos</h1>
+    <div class="conteudo-principal">
+        <div class="card-header-principal">
+            <h2>Pedidos</h2>
+            <a href="/cardapio_digital" class="btn-voltar">
+                <i class="fas fa-arrow-left"></i> Voltar ao Cardápio
+            </a>
         </div>
-    </div>
-
-    <div class="pedidos-lista">
-        <a href="/cardapio_digital" class="voltar-btn">
-            <i class="fas fa-arrow-left"></i> Voltar ao Cardápio
-        </a>
 
         <% if (pedidos && pedidos.length > 0) { %>
-            <% pedidos.forEach(pedido => { %>
-                <div class="pedido-card">
-                    <div class="pedido-header">
-                        <h3>Pedido #<%= pedido.id %></h3>
-                        <span class="pedido-status status-<%= pedido.status.toLowerCase() %>">
-                            <%= pedido.status %>
-                        </span>
-                    </div>
-                    <div class="pedido-info">
-                        <p><i class="far fa-clock"></i> Data/Hora: <%= pedido.data_hora %></p>
-                        <p><i class="fas fa-map-marker-alt"></i> <%= pedido.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada' %>: <%= pedido.endereco %></p>
-                        <% if (pedido.previsao_entrega) { %>
-                            <p><i class="fas fa-truck"></i> Previsão: <%= pedido.previsao_entrega %></p>
-                        <% } %>
-                    </div>
-
-                    <!-- Add items details section -->
-                    <div class="pedido-itens">
-                        <button class="toggle-itens" onclick="toggleItens(this)">
-                            <h4>
-                                <i class="fas fa-receipt"></i> 
-                                Itens do Pedido 
-                                <i class="fas fa-chevron-down"></i>
-                            </h4>
-                        </button>
-                        <div class="itens-content" style="display: none;">
-                            <% if (pedido.itens && Array.isArray(pedido.itens)) { %>
-                                <% pedido.itens.forEach(item => { %>
-                                    <div class="pedido-item-detalhe">
-                                        <div class="item-info">
-                                            <span class="item-quantidade"><%= item.quantidade %>x</span>
-                                            <span class="item-nome"><%= item.produto.nome %></span>
-                                            <% if (item.opcionais && item.opcionais.length > 0) { %>
-                                                <small class="item-opcionais">
-                                                    (<%= item.opcionais.map(op => op.nome).join(', ') %>)
-                                                </small>
-                                            <% } %>
-                                        </div>
-                                        <span class="item-preco">
-                                            R$ <%= (Number(item.produto.preco) * Number(item.quantidade)).toFixed(2) %>
-                                        </span>
-                                    </div>
-                                <% }) %>
-                            <% } else { %>
-                                <p>Nenhum item encontrado no pedido.</p>
-                            <% } %>
-                        </div>
-                    </div>
-
-                    <!-- Add this style to your existing CSS -->
-                    <style>
-                        .toggle-itens {
-                            width: 100%;
-                            background: none;
-                            border: none;
-                            padding: 10px 0;
-                            cursor: pointer;
-                            text-align: left;
-                        }
-
-                        .toggle-itens h4 {
-                            margin: 0;
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                        }
-
-                        .toggle-itens:hover {
-                            background-color: #f5f5f5;
-                        }
-
-                        .toggle-itens.active .fa-chevron-down {
-                            transform: rotate(180deg);
-                        }
-
-                        .fa-chevron-down {
-                            transition: transform 0.3s ease;
-                        }
-                    </style>
-
-                    <!-- Add this script at the end of your body tag -->
-                    <script>
-                        function toggleItens(button) {
-                            const content = button.nextElementSibling;
-                            const isVisible = content.style.display === 'block';
-                            content.style.display = isVisible ? 'none' : 'block';
-                            button.classList.toggle('active');
-                        }
-                    </script>
-                    <div class="pedido-total">
-                        <div class="subtotal">
-                            <span>Subtotal:</span>
-                            <span>R$ <%= Number(pedido.subtotal).toFixed(2) %></span>
-                        </div>
-                        <% if (pedido.taxa_entrega > 0) { %>
-                            <div class="taxa-entrega">
-                                <span>Taxa de entrega:</span>
-                                <span>R$ <%= Number(pedido.taxa_entrega).toFixed(2) %></span>
+            <div class="grid-pedidos">
+                <% pedidos.forEach(pedido => { %>
+                    <div class="card-pedido">
+                        <div class="pedido-header">
+                            <div class="pedido-titulo">
+                                <h3>Pedido #<%= pedido.id %></h3>
+                                <span class="status-badge status-<%= pedido.status.toLowerCase() %>">
+                                    <%= pedido.status %>
+                                </span>
                             </div>
-                        <% } %>
-                        <div class="total-final">
-                            <strong>Total:</strong>
-                            <strong>R$ <%= Number(pedido.total).toFixed(2) %></strong>
+                            <div class="pedido-info">
+                                <div class="info-item">
+                                    <i class="far fa-clock"></i>
+                                    <span><%= pedido.data_hora %></span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span><%= pedido.tipo_entrega === 'entrega' ? 'Entrega' : 'Retirada' %>: <%= pedido.endereco %></span>
+                                </div>
+                                <% if (pedido.previsao_entrega) { %>
+                                    <div class="info-item">
+                                        <i class="fas fa-truck"></i>
+                                        <span>Previsão: <%= pedido.previsao_entrega %></span>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="pedido-itens">
+                            <button class="toggle-itens" onclick="toggleItens(this)">
+                                <div class="toggle-header">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>Itens do Pedido</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </button>
+                            <div class="itens-content">
+                                <% if (pedido.itens && Array.isArray(pedido.itens)) { %>
+                                    <% pedido.itens.forEach(item => { %>
+                                        <div class="item-pedido">
+                                            <div class="item-info">
+                                                <span class="item-quantidade"><%= item.quantidade %>x</span>
+                                                <div class="item-detalhes">
+                                                    <span class="item-nome"><%= item.produto.nome %></span>
+                                                    <% if (item.opcionais && item.opcionais.length > 0) { %>
+                                                        <small class="item-opcionais">
+                                                            (<%= item.opcionais.map(op => op.nome).join(', ') %>)
+                                                        </small>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                            <span class="item-preco">
+                                                R$ <%= (Number(item.produto.preco) * Number(item.quantidade)).toFixed(2).replace('.', ',') %>
+                                            </span>
+                                        </div>
+                                    <% }) %>
+                                <% } else { %>
+                                    <p class="sem-itens">Nenhum item encontrado no pedido.</p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="pedido-total">
+                            <div class="total-item subtotal">
+                                <span>Subtotal:</span>
+                                <span>R$ <%= Number(pedido.subtotal).toFixed(2).replace('.', ',') %></span>
+                            </div>
+                            <% if (pedido.taxa_entrega > 0) { %>
+                                <div class="total-item taxa-entrega">
+                                    <span>Taxa de entrega:</span>
+                                    <span>R$ <%= Number(pedido.taxa_entrega).toFixed(2).replace('.', ',') %></span>
+                                </div>
+                            <% } %>
+                            <div class="total-item total-final">
+                                <strong>Total:</strong>
+                                <strong>R$ <%= Number(pedido.total).toFixed(2).replace('.', ',') %></strong>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-<!-- Add these styles to your existing CSS -->
-<style>
-    .pedido-itens {
-        margin: 15px 0;
-        padding: 10px;
-        background: #f9f9f9;
-        border-radius: 5px;
-    }
-
-    .pedido-itens h4 {
-        margin-bottom: 10px;
-        color: #333;
-    }
-
-    .pedido-item-detalhe {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-    }
-
-    .pedido-item-detalhe:last-child {
-        border-bottom: none;
-    }
-
-    .item-info {
-        flex: 1;
-    }
-
-    .item-quantidade {
-        font-weight: bold;
-        margin-right: 8px;
-        color: #666;
-    }
-
-    .item-nome {
-        color: #333;
-    }
-
-    .item-opcionais {
-        display: block;
-        color: #666;
-        font-size: 0.9em;
-        margin-top: 2px;
-        margin-left: 25px;
-    }
-
-    .item-preco {
-        color: #333;
-        font-weight: bold;
-    }
-
-    .subtotal, .taxa-entrega, .total-final {
-        display: flex;
-        justify-content: space-between;
-        padding: 5px 0;
-    }
-
-    .total-final {
-        border-top: 2px solid #eee;
-        margin-top: 10px;
-        padding-top: 10px;
-        font-size: 1.1em;
-        color: #333;
-    }
-</style>
-            <% }); %>
+                <% }); %>
+            </div>
         <% } else { %>
-            <div class="pedido-card">
-                <p>Você ainda não fez nenhum pedido.</p>
+            <div class="alerta alerta-info">
+                <i class="fas fa-info-circle"></i>
+                Você ainda não fez nenhum pedido.
             </div>
         <% } %>
     </div>
+
+    <script>
+        function toggleItens(button) {
+            button.classList.toggle('active');
+            const content = button.nextElementSibling;
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
+
+    <%- include('footer') %>
 </body>
 </html>

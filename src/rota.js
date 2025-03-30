@@ -831,7 +831,7 @@ app.get('/dashboard/qrcode', verificarAutenticacao, (req, res) => {
 });
 
 // Add this route before your other routes
-app.get('/check-username', async (req, res) => {
+app.get('/dashboard/check-username', async (req, res) => {
     const { username } = req.query;
     const client = await conectarBanco();
     
@@ -850,7 +850,7 @@ app.get('/check-username', async (req, res) => {
     }
 });
 
-app.get('/check-phone', async (req, res) => {
+app.get('/dashboard/check-phone', async (req, res) => {
     const { phone } = req.query;
     const client = await conectarBanco();
     console.log('Telefone',phone)
@@ -869,7 +869,7 @@ app.get('/check-phone', async (req, res) => {
     }
 });
 // Página de Cadastro
-app.get('/register', (req, res) => {
+app.get('/dashboard/register', (req, res) => {
     res.render('cadastrar_restaurante', {
         erro: null,
         process: {

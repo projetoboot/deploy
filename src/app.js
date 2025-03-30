@@ -8,20 +8,24 @@ const path = require('path');
 const flash = require('express-flash');
 const upload = require('./config/multer');
 const readline = require('readline');
+const startNgrok = require('./ngrok');
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/../views');
-
+// Add this near other app.use() statements
+app.use('/images/icons', express.static(path.join(__dirname, '..', 'public', 'images', 'icons')));
 // Remove all other static middleware and use a single configuration
 app.use(express.static(path.join(__dirname, '..', 'public')));
 //app.use(express.static(__dirname + '/../public'));
-app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
-app.use('/img', express.static(path.join(__dirname, '..', 'public', 'img')));
+app.use('dados/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
+app.use('dados/img', express.static(path.join(__dirname, '..', 'public', 'img')));
 app.use(express.static(__dirname + '/public'));
-app.use('/css', express.static(path.join(__dirname, '..', 'public', 'css')));
+app.use('dados/css', express.static(path.join(__dirname, '..', 'public', 'css')));
+app.use('fonts', express.static(path.join(__dirname, '..', 'public', 'fonts')));
+app.use(express.static('public'));
 const DB_CONFIG = require('./config/database');
 // Configurações do banco de dados PostgreSQL
 const pool = new Pool(DB_CONFIG);
@@ -39,7 +43,7 @@ function verificarAutenticacao(req, res, next) {
 
 // Middleware para logar a sessão completa
 app.use((req, res, next) => {
-    console.log('Sessão completa:', req.session);
+    ///console.log('Sessão completa:', req.session);
     next();
 });
 
@@ -69,6 +73,138 @@ async function conectarBanco() {
         throw error;
     }
 }
+
+app.get('/:restaurante', async (req, res, next) => { 
+    const nomeRestaurante = req.params.restaurante;  
+    const nomeRestauranteURL = nomeRestaurante.replace(/\s+/g, '-');
+   console.log("consultar ",nomeRestaurante,'consulta com url"=',nomeRestauranteURL);
+    console.log("url", nomeRestauranteURL);
+    const nomeRestauranteLike = `%${nomeRestauranteURL}%`;
+    const nomeRestauranteSimilar = `%${nomeRestauranteURL.replace(/-/g, '_')}%`;
+
+    console.log("Consultar LIKE:", nomeRestauranteLike);
+    console.log("Consultar SIMILAR:", nomeRestauranteSimilar);
+    const rotasServico = [
+        'login',
+        'cadastro',
+        'register',
+        'dashboard',
+        'cardapio',
+        'cardapio_digital',
+        'pedidos',
+        'sair',
+        'pedido_confirmado',
+        'finalizar_pedido',
+        'salvar-telefone',
+        'uploads',
+        'img',
+        'css','dashboard'
+    ];
+    if (rotasServico.includes(nomeRestauranteURL)) {
+        console.log("Pulando código e indo para a próxima rota...");
+        return next();
+    }
+    ///quero criar uma interupçao do codigo se nomeRestauranteURL=cardapio_digital pular todo essa codigo
+    if (!nomeRestauranteURL) {
+
+        return res.status(400).send('ID do restaurante não fornecido.');
+    }
+    const client = await conectarBanco();    
+    try {
+        // Get restaurant info first
+
+console.log("consultar ",nomeRestaurante);
+console.log("consultar siilar ",nomeRestauranteSimilar);
+const restauranteResult = await client.query(
+    `SELECT 
+     r.id AS restaurante_id,
+     u.id AS usuario_id, 
+     u.username 
+     FROM usuarios u 
+     INNER JOIN restaurantes r ON r.usuario_id = u.id 
+     WHERE LOWER(u.username) ILIKE LOWER($1) 
+        OR LOWER(u.username) ILIKE LOWER($2)`,
+    [nomeRestauranteLike, nomeRestauranteSimilar]
+);
+
+console.log("Resultado da busca:", restauranteResult.rows);
+        if (!restauranteResult.rows.length) {
+            console.log("restaurante nao encontrado");
+            return res.status(404).send('Restaurante não encontrado');
+            ///req.session.id_restaurante=restauranteId
+        }
+        console.log("consultar ",restauranteResult.rows[0].restaurante_id );
+         req.session.id_restaurante=restauranteResult.rows[0].restaurante_id
+        // Modified query to include restaurant ID
+        const query = `
+        SELECT DISTINCT ON (p.id)
+            p.id AS prato_id,
+            p.categoria AS categoria,
+            p.restaurante_id AS restaurante_id,
+            p.nome AS prato_nome,
+            p.descricao AS descricao,
+            p.preco AS prato_preco,
+            p.imagem AS prato_imagem,
+            p.ordem,
+            c.id AS complemento_id,
+            c.nome AS complemento_nome,
+            c.preco_adicional,
+            cat.icone AS categoria_icone
+        FROM pratos p
+        LEFT JOIN complementos c ON p.id = c.prato_id
+        LEFT JOIN categorias_modal cat ON p.restaurante_id = cat.id_restaurante
+        WHERE p.restaurante_id = $1
+        ORDER BY p.id, p.ordem ASC;
+        `;
+        
+        const result = await client.query(query, [req.session.id_restaurante]);
+        
+        
+        const pratosMap = new Map();
+
+        result.rows.forEach(row => {
+            if (!pratosMap.has(row.prato_id)) {
+                pratosMap.set(row.prato_id, {
+                    id: row.prato_id,
+                    nome: row.prato_nome,
+                    categoria: row.categoria,
+                    icone: row.categoria_icone,
+                    preco: parseFloat(row.prato_preco),
+                    imagem: row.prato_imagem,
+                    descricao: row.descricao,
+                    restaurante_id: row.restaurante_id,
+                    opcionais: []
+                });
+            }
+        
+            console.log("consultar ",row.categoria_icone);
+            if (row.complemento_id && !pratosMap.get(row.prato_id).opcionais.some(opt => opt.id === row.complemento_id)) {
+                pratosMap.get(row.prato_id).opcionais.push({
+                    id: row.complemento_id,
+                    nome: row.complemento_nome,
+                    preco_adicional: parseFloat(row.preco_adicional)
+                });
+            }
+        });
+       
+        const cardapio = Array.from(pratosMap.values());
+       
+       console.log(   'titulo:',restauranteResult.rows[0].username);
+        res.render('cardapio_digital', { 
+            cardapio, 
+            telefone: req.session.telefone,
+            titulo:restauranteResult.rows[0].username,
+            carrinho: [] // O carrinho agora é gerenciado pelo localStorage no cliente
+        });
+    } catch (error) {
+        console.error('Erro ao buscar cardápio:', error);
+        res.status(500).send('Erro ao carregar cardápio.');
+    } finally {
+        client.release();
+    }
+ });
+
+
 // Página inicial - Página de apresentação do serviço
 app.get('/', (req, res) => {
     res.render('home');
@@ -79,7 +215,6 @@ app.post('/salvar-telefone', async (req, res) => {
     if (!telefone) {
         return res.render('telefone', { erro: 'Número de telefone é obrigatório' });
     }
-
     const client = await conectarBanco();
     try {
         // Verificar se o telefone já existe
@@ -107,10 +242,13 @@ app.post('/salvar-telefone', async (req, res) => {
 
 
 
+// ... código existente ...
 
 
+// ... resto do código existente ...
 
-app.get('/cardapio_digital', async (req, res) => {
+
+app.get('/cardapio', async (req, res) => {
     console.log("url", req.query); // Exibe todos os parâmetros da query string para depuração
     const restauranteId= req.query.Id; // Acessa o parâmetro "Id" da query string
     console.log("url", restauranteId);
@@ -119,6 +257,7 @@ app.get('/cardapio_digital', async (req, res) => {
     }
     const client = await conectarBanco();
     req.session.id_restaurante=restauranteId
+    console.log("url_sessom", req.session.id_restaurante);
     try {
         // Get restaurant info first
         const restauranteResult = await client.query('SELECT * FROM restaurantes WHERE id = $1', [restauranteId]);
@@ -166,7 +305,8 @@ app.get('/cardapio_digital', async (req, res) => {
                 pratosMap.get(row.prato_id).opcionais.push({
                     id: row.complemento_id,
                     nome: row.complemento_nome,
-                    preco_adicional: parseFloat(row.preco_adicional)
+                    preco_adicional: parseFloat(row.preco_adicional),
+                   
                 });
             }
         });
@@ -175,7 +315,8 @@ app.get('/cardapio_digital', async (req, res) => {
        
         ///console.log(JSON.stringify(cardapio, null, 2));
         res.render('cardapio_digital', { 
-            cardapio, 
+            cardapio,  
+            titulo:restauranteResult.rows[0].username,
             telefone: req.session.telefone,
             carrinho: [] // O carrinho agora é gerenciado pelo localStorage no cliente
         });
@@ -186,8 +327,76 @@ app.get('/cardapio_digital', async (req, res) => {
         client.release();
     }
  });
+app.post('/dashboard/pratos/reorder', verificarAutenticacao, async (req, res) => {
+    const client = await conectarBanco();
+    try {
+        await client.query('BEGIN');
+        
+        for (const item of req.body.ordem) {
+            await client.query(
+                'UPDATE pratos SET ordem = $1 WHERE id = $2 AND restaurante_id = $3',
+                [item.ordem, item.id, req.session.usuario.restaurante_id]
+            );
+        }
+        
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao reordenar pratos:', error);
+        res.status(500).json({ success: false, error: 'Erro ao reordenar pratos' });
+    } finally {
+        client.release();
+    }
+});
+ app.get('/dashboard/pratos/organizar', verificarAutenticacao, async (req, res) => {
+    const client = await conectarBanco();
+    try {
+        const result = await client.query(`
+            SELECT p.*, c.nome as categoria_nome 
+            FROM pratos p 
+            LEFT JOIN categorias c ON p.categoria = c.nome
+            WHERE p.restaurante_id = $1 
+            ORDER BY p.ordem NULLS LAST, p.id`, 
+            [req.session.usuario.restaurante_id]
+        );
+        
+        res.render('organizar_pratos', { 
+            pratos: result.rows,
+            currentPage: 'organizar_pratos'
+        });
+    } catch (error) {
+        console.error('Erro ao carregar pratos:', error);
+        res.status(500).send('Erro ao carregar pratos');
+    } finally {
+        client.release();
+    }
+});
 
-
+app.post('/dashboard/pratos/atualizar-ordem', verificarAutenticacao, async (req, res) => {
+    const { ordens } = req.body;
+    const client = await conectarBanco();
+    
+    try {
+        await client.query('BEGIN');
+        
+        for (const [pratoId, ordem] of Object.entries(ordens)) {
+            await client.query(
+                'UPDATE pratos SET ordem = $1 WHERE id = $2 AND restaurante_id = $3',
+                [ordem, pratoId, req.session.usuario.restaurante_id]
+            );
+        }
+        
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao atualizar ordem:', error);
+        res.status(500).json({ success: false });
+    } finally {
+        client.release();
+    }
+});
 
 // Rota para processar a finalização do pedido
 // Rota para confirmação do pedido
@@ -540,7 +749,7 @@ app.get('/sair', (req, res) => {
 
 // Middleware para verificar login
 function verificarAutenticacao(req, res, next) {
-    console.log('Sessão atual:', req.session.usuario);
+   /// console.log('Sessão atual:', req.session.usuario);
     if (!req.session.usuario) {
         console.log('Usuário não autenticado. Redirecionando para /login...');
         return res.redirect('/login');
@@ -551,11 +760,33 @@ function verificarAutenticacao(req, res, next) {
 
 // Middleware para logar a sessão completa
 app.use((req, res, next) => {
-    console.log('Sessão completa:', req.session);
+    ///console.log('Sessão completa:', req.session);
     next();
 });
 
-
+// Add this route to handle category search
+app.get('/api/categorias/buscar', verificarAutenticacao, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { termo } = req.query;
+        const result = await client.query(
+            `SELECT id, nome , icone
+             FROM categorias_modal 
+             WHERE 
+                id_restaurante = $1 AND 
+                nome ILIKE $2
+             ORDER BY nome 
+             LIMIT 10`,
+            [req.session.usuario.restaurante_id, `%${termo}%`]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erro ao buscar categorias:', error);
+        res.status(500).json({ error: 'Erro ao buscar categorias' });
+    } finally {
+        client.release();
+    }
+});
 
 
 app.get('/', (req, res) => {
@@ -817,11 +1048,9 @@ app.post('/login', async (req, res) => {
         if (usuarios.length === 0) {
             return res.render('login', { erro: 'Usuário não encontrado' });
         }
-
         if (!(await bcrypt.compare(password, usuarios[0].password))) {
             return res.render('login', { erro: 'Usuário ou senha inválidos!' });
         }
-
         req.session.usuario = { id: usuarios[0].id, username: usuarios[0].username };
       
       
@@ -833,8 +1062,7 @@ app.post('/login', async (req, res) => {
            
             console.log('loginda Dashboard após login:', req.session.usuario);
         } else {
-            req.session.usuario = {  ...req.session.usuario,     restaurante_id: null };
-       
+            req.session.usuario = {  ...req.session.usuario,     restaurante_id: null };     
            
             
         }
@@ -844,6 +1072,8 @@ app.post('/login', async (req, res) => {
                 console.error('Erro ao salvar a sessão:', err);
             } else {
                 console.log('Sessão salva com sucesso.');
+                
+                
             }
         });
 
@@ -856,7 +1086,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.get('/logout', (req, res) => {
+app.get('/sair', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             console.error('Erro ao fazer logout:', err);
@@ -866,23 +1096,57 @@ app.get('/logout', (req, res) => {
     });
 });
 
+// Add this function after your existing database connection code
+async function getPedidosCounts(restauranteId) {
+    const client = await conectarBanco();
+    try {
+        const result = await client.query(`
+            SELECT 
+                tipo_entrega,
+                COUNT(*) as count,
+                COUNT(CASE WHEN status_preparo = 'pendente' THEN 1 END) as pendentes
+            FROM pedido_confirmacao 
+            WHERE restaurante_id = $1 
+            AND data_confirmacao >= NOW() - INTERVAL '24 hours'
+            GROUP BY tipo_entrega
+        `, [restauranteId]);
+        
+        return {
+            entrega: result.rows.find(r => r.tipo_entrega === 'entrega') || { count: 0, pendentes: 0 },
+            retirada: result.rows.find(r => r.tipo_entrega === 'retirada') || { count: 0, pendentes: 0 },
+            consumoLocal: result.rows.find(r => r.tipo_entrega === 'consumo_local') || { count: 0, pendentes: 0 }
+        };
+    } catch (error) {
+        console.error('Erro ao buscar contagem de pedidos:', error);
+        return { entrega: { count: 0, pendentes: 0 }, retirada: { count: 0, pendentes: 0 }, consumoLocal: { count: 0, pendentes: 0 } };
+    } finally {
+        client.release();
+    }
+}
+
+// Modify your dashboard route to include the pedidos counts
 app.get('/dashboard', verificarAutenticacao, async (req, res) => {
     const client = await conectarBanco();
     try {
-        const result = await client.query('SELECT * FROM restaurantes WHERE usuario_id = $1', [req.session.usuario.id]);
-        res.render('dashboard', { 
+        // Get restaurant info
+        const restauranteResult = await client.query(
+            'SELECT * FROM restaurantes WHERE usuario_id = $1',
+            [req.session.usuario.id]
+        );
+        const restaurante = restauranteResult.rows[0];
+        
+        // Get pedidos counts
+        const pedidosCounts = await getPedidosCounts(restaurante.id);
+
+        res.render('dashboard', {
             currentPage: 'dashboard',
-            usuario: req.session.usuario, 
-            qrCode: '/qrcode.png',
-            restaurante: result.rows[0] || null
+            restaurante,
+            qrCode: null, // or however you're handling the QR code
+            pedidosCounts // Add this to the render data
         });
     } catch (error) {
-        console.error('Erro ao buscar restaurante:', error);
-        res.render('dashboard', { 
-            usuario: req.session.usuario, 
-            qrCode: '/qrcode.png',
-            restaurante: null
-        });
+        console.error('Erro ao carregar dashboard:', error);
+        res.status(500).send('Erro ao carregar dashboard');
     } finally {
         client.release();
     }
@@ -939,7 +1203,7 @@ app.post('/dashboard/restaurante/cadastrar', verificarAutenticacao, async (req, 
 });
 
 // Chamar QR Code do bot.js após login
-const bot = require('./bot'); // Importa e inicia o bot automaticamente
+
 
 // Rotas de Gerenciamento de Categorias
 app.get('/dashboard/categorias', verificarAutenticacao, async (req, res) => {
@@ -976,8 +1240,12 @@ app.post('/dashboard/categorias', verificarAutenticacao, async (req, res) => {
 app.get('/dashboard/pratos', verificarAutenticacao, async (req, res) => {
     const client = await conectarBanco();
     try {
-        const result = await client.query('SELECT * FROM pratos WHERE restaurante_id = $1', [req.session.usuario.restaurante_id]);
-        console.log('pratos', result.rows),
+      
+       const result = await client.query(
+            'SELECT * FROM pratos WHERE restaurante_id = $1 ORDER BY ordem NULLS LAST, id',
+            [req.session.usuario.restaurante_id]
+        );
+        ////console.log('pratos', result.rows),
         res.render('dashboard', {
             currentPage: 'pratos',
             pratos: result.rows,
@@ -1173,6 +1441,38 @@ app.post('/dashboard/pratos/novo', verificarAutenticacao, upload.single('imagem'
     }
 });
 
+app.delete('/dashboard/pratos/excluir/:id', async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+
+        const verificaPrato = await client.query(
+            'SELECT id FROM pratos WHERE id = $1 AND restaurante_id = $2',
+            [req.params.id, req.session.usuario.restaurante_id]
+        );
+
+        if (verificaPrato.rows.length === 0) {
+            throw new Error('Prato não encontrado ou sem permissão');
+        }
+
+        
+        await client.query(
+            'DELETE FROM pratos WHERE id = $1 AND restaurante_id = $2',
+            [req.params.id, req.session.usuario.restaurante_id]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao excluir prato:', error);
+        res.status(500).json({ success: false, message: 'Erro ao excluir o prato' });
+    } finally {
+        client.release();
+    }
+});
+
 app.get('/dashboard/pratos/editar/:id', verificarAutenticacao, async (req, res) => {
     const client = await conectarBanco();
     try {
@@ -1319,7 +1619,7 @@ app.get('/dashboard/qrcode', verificarAutenticacao, (req, res) => {
 });
 
 // Add this route before your other routes
-app.get('/check-username', async (req, res) => {
+app.get('/dashboard/check-username', async (req, res) => {
     const { username } = req.query;
     const client = await conectarBanco();
     
@@ -1338,7 +1638,7 @@ app.get('/check-username', async (req, res) => {
     }
 });
 
-app.get('/check-phone', async (req, res) => {
+app.get('/dashboard/check-phone', async (req, res) => {
     const { phone } = req.query;
     const client = await conectarBanco();
     console.log('Telefone',phone)
@@ -1377,18 +1677,22 @@ app.post('/register', upload.single('logo'), async (req, res) => {
     const { username, password, tell } = req.body;
     console.log('Dados recebidos:', username, password, tell);
     const numeroLimpo = tell.replace(/\D/g, "");
+
     if (!username?.trim() || !password?.trim()) {
-        return res.render('cadastrar_restaurant', { erro: 'Nome de usuário e senha são obrigatórios!' });
+        return res.render('cadastrar_restaurante', { erro: 'Nome de usuário e senha são obrigatórios!' });
     }
 
     const client = await conectarBanco();
 
     try {
+        await client.query('BEGIN'); // Inicia a transação
+
         console.log('Verificando se usuário já existe...');
         const result = await client.query('SELECT * FROM usuarios WHERE username = $1', [username]);
 
         if (result.rows.length > 0) {
             console.log('Usuário já existe!');
+            await client.query('ROLLBACK'); // Desfaz a transação
             return res.render('register', { erro: 'Usuário já existe!' });
         }
 
@@ -1397,15 +1701,12 @@ app.post('/register', upload.single('logo'), async (req, res) => {
 
         console.log('Inserindo novo usuário...');
         const resultInsert = await client.query(
-            'INSERT INTO usuarios (username, password, tell) VALUES ($1, $2, $3) RETURNING id',
-            [username, senhaCriptografada, numeroLimpo]
+            'INSERT INTO usuarios (username, password, tell, senha2) VALUES ($1, $2, $3, $4) RETURNING id',
+            [username, senhaCriptografada, numeroLimpo, password]
         );
-        /// para p codigo aqui 
-        //throw new Error("Erro crítico! Interrompendo a execução.");
 
-
-        req.session.usuario = { id: resultInsert.rows[0].id, username };
-        console.log('Sessão definida após cadastro:', req.session.usuario);
+        const usuarioId = resultInsert.rows[0].id;
+        req.session.usuario = { id: usuarioId, username };
 
         const {
             nome, endereco, latitude, longitude, permite_consumo_local, permite_retirada,
@@ -1421,14 +1722,19 @@ app.post('/register', upload.single('logo'), async (req, res) => {
         const raioEntregaNum = req.body.raio_entrega?.trim() !== '' ? parseFloat(req.body.raio_entrega) : null;
         const tempoMedioEntregaNum = req.body.tempo_medio_entrega?.trim() !== '' ? parseInt(req.body.tempo_medio_entrega) : null;
 
-        console.log('Conectando ao banco para inserir restaurante...');
-        const client2 = await conectarBanco();
-
-        try {
-            console.log('Dados que serão inseridos na tabela restaurantes:', {
-                usuario_id: req.session.usuario.id,
+        console.log('Inserindo restaurante no banco...');
+        const resultRestaurante = await client.query(
+            `INSERT INTO restaurantes (
+                usuario_id, nome_usuario, nome, horarios_funcionamento,
+                dias_funcionamento, endereco, latitude, longitude,
+                permite_consumo_local, permite_retirada, permite_entrega,
+                taxa_entrega, raio_entrega, tempo_medio_entrega
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
+            [
+                usuarioId,
+                username,  // Agora garantindo que está correto
                 nome,
-                horarios_funcionamento: JSON.stringify({
+                JSON.stringify({
                     Segunda: { abertura: req.body.horario_abertura_segunda || null, fechamento: req.body.horario_fechamento_segunda || null },
                     Terca: { abertura: req.body.horario_abertura_terca || null, fechamento: req.body.horario_fechamento_terca || null },
                     Quarta: { abertura: req.body.horario_abertura_quarta || null, fechamento: req.body.horario_fechamento_quarta || null },
@@ -1438,79 +1744,44 @@ app.post('/register', upload.single('logo'), async (req, res) => {
                     Domingo: { abertura: req.body.horario_abertura_domingo || null, fechamento: req.body.horario_fechamento_domingo || null }
                 }),
                 dias_funcionamento,
-                endereco: enderecoFormatado,
-                latitude: latitudeNum,
-                longitude: longitudeNum,
-                permite_consumo_local: permite_consumo_local === 'on',
-                permite_retirada: permite_retirada === 'on',
-                permite_entrega: permite_entrega === 'on',
-                taxa_entrega: taxaEntregaNum,
-                raio_entrega: raioEntregaNum,
-                tempo_medio_entrega: tempoMedioEntregaNum
-            });
+                enderecoFormatado,
+                latitudeNum,
+                longitudeNum,
+                permite_consumo_local === 'on',
+                permite_retirada === 'on',
+                permite_entrega === 'on',
+                taxaEntregaNum,
+                raioEntregaNum,
+                tempoMedioEntregaNum
+            ]
+        );
 
-            console.log('Inserindo restaurante no banco...');
-            const resultRestaurante = await client2.query(
-                `INSERT INTO restaurantes (
-                    usuario_id, nome, horarios_funcionamento,
-                    dias_funcionamento, endereco, latitude, longitude,
-                    permite_consumo_local, permite_retirada, permite_entrega,
-                    taxa_entrega, raio_entrega, tempo_medio_entrega
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
-                [
-                    req.session.usuario.id, nome,
-                    JSON.stringify({
-                        Segunda: { abertura: req.body.horario_abertura_segunda || null, fechamento: req.body.horario_fechamento_segunda || null },
-                        Terca: { abertura: req.body.horario_abertura_terca || null, fechamento: req.body.horario_fechamento_terca || null },
-                        Quarta: { abertura: req.body.horario_abertura_quarta || null, fechamento: req.body.horario_fechamento_quarta || null },
-                        Quinta: { abertura: req.body.horario_abertura_quinta || null, fechamento: req.body.horario_fechamento_quinta || null },
-                        Sexta: { abertura: req.body.horario_abertura_sexta || null, fechamento: req.body.horario_fechamento_sexta || null },
-                        Sabado: { abertura: req.body.horario_abertura_sabado || null, fechamento: req.body.horario_fechamento_sabado || null },
-                        Domingo: { abertura: req.body.horario_abertura_domingo || null, fechamento: req.body.horario_fechamento_domingo || null }
-                    }),
-                    dias_funcionamento,
-                    enderecoFormatado,
-                    latitudeNum,
-                    longitudeNum,
-                    permite_consumo_local === 'on',
-                    permite_retirada === 'on',
-                    permite_entrega === 'on',
-                    taxaEntregaNum,
-                    raioEntregaNum,
-                    tempoMedioEntregaNum
-                ]
-            );
+        const restauranteId = resultRestaurante.rows[0].id;
+        console.log('Restaurante cadastrado com sucesso! ID:', restauranteId);
 
-            console.log('Restaurante cadastrado com sucesso! ID:', resultRestaurante.rows[0].id);
+        req.session.usuario = { ...req.session.usuario, restaurante_id: restauranteId };
+        console.log('Sessão atualizada:', req.session.usuario);
 
-            // Se houver upload de logo
-            if (req.file) {
-                console.log('Logo detectada:', req.file);
-                const logoPath = `/uploads/${req.file.filename}`;
-                console.log('Salvando logo em:', logoPath);
+        // Se houver upload de logo
+        if (req.file) {
+            console.log('Logo detectada:', req.file);
+            const logoPath = `/uploads/${req.file.filename}`;
+            console.log('Salvando logo em:', logoPath);
 
-                await client2.query('UPDATE restaurantes SET logo_url = $1 WHERE id = $2', [logoPath, resultRestaurante.rows[0].id]);
-                /////////craindo a seesion  do restaurante
-               
-                req.session.usuario = {  ...req.session.usuario,     restaurante_id: resultRestaurante.rows[0].id};     
- 
-                  console.log('sessiom id restaurantes :', req.session.usuario);
-            }
-
-            console.log('Redirecionando para dashboard...');
-            res.redirect('/dashboard');
-        } catch (error) {
-            console.error('Erro ao cadastrar restaurante:', error);
-            res.status(500).send('Erro ao cadastrar restaurante.');
-        } finally {
-            client2.release();
+            await client.query('UPDATE restaurantes SET logo_url = $1 WHERE id = $2', [logoPath, restauranteId]);
         }
 
+        await client.query('COMMIT'); // Finaliza a transação e confirma tudo no banco
+
+        console.log('Redirecionando para dashboard...');
+        res.redirect('/dashboard');
+
     } catch (error) {
-        console.error('Erro no cadastro do usuário:', error);
-        res.status(500).send('Erro ao cadastrar usuário.');
+        await client.query('ROLLBACK'); // Se der erro, desfaz todas as operações
+        console.error('Erro ao cadastrar restaurante:', error);
+        res.status(500).send('Erro ao cadastrar restaurante.');
     } finally {
-        client.release();
+        client.release(); // Libera a conexão do pool
     }
 });
 
@@ -1581,6 +1852,33 @@ app.post('/dashboard/restaurante/atualizar', verificarAutenticacao, upload.singl
         client.release();
     }
 });
+// Rota para atualizar ordem das categorias
+app.post('/dashboard/categorias/reorder', verificarAutenticacao, async (req, res) => {
+    const client = await conectarBanco();
+    try {
+        await client.query('BEGIN');
+
+        // Atualiza a ordem das categorias
+        for (const item of req.body.categorias) {
+            await client.query(
+                `UPDATE pratos 
+                 SET ordem_categoria = $1 
+                 WHERE categoria = $2 AND restaurante_id = $3`,
+                [item.ordem, item.categoria, req.session.usuario.restaurante_id]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao reordenar categorias:', error);
+        res.status(500).json({ success: false, error: 'Erro ao reordenar categorias' });
+    } finally {
+        client.release();
+    }
+});
+
 
 app.post('/dashboard/categorias/nova', verificarAutenticacao, async (req, res) => {
     try {
@@ -1869,6 +2167,63 @@ app.get('/dashboard/pedidos/gerenciar', verificarAutenticacao, async (req, res) 
         client.release();
     }
 });
+app.get('/dashboard/api/categorias', async (req, res) => {
+    try {
+        // Verifique se o restauranteId está presente na sessão
+        if (!req.session.usuario.restaurante_id) {
+            return res.status(400).json({ error: 'restauranteId não encontrado na sessão' });
+        }
+
+        const categorias = await pool.query(
+            'SELECT id, nome, icone FROM categorias_modal WHERE id_restaurante = $1',
+            [req.session.usuario.restaurante_id]
+        );
+
+        res.json(categorias);
+    } catch (error) {
+        console.error('Erro ao buscar categorias:', error);  // Melhor log de erro
+        res.status(500).json({ error: `Erro ao buscar categorias Linha 2117: ${error.message}` });
+    }
+});
+
+
+// Modify the route to create new category
+app.post('/api/categorias/nova', async (req, res) => {
+    console.log('Recebido POST para /api/categorias/nova');
+    try {
+        const { nome, icone } = req.body;
+        console.log('Dados recebidos:', { nome, icone });
+
+        // Consulta para inserir a nova categoria
+        const query = `
+            INSERT INTO categorias_modal (nome, icone, id_restaurante)
+            VALUES ($1, $2, $3) 
+            RETURNING id;  -- Retorna o id gerado da nova categoria
+        `;
+        
+        // Parâmetros da consulta
+        const params = [nome, icone, req.session.usuario.restaurante_id];
+        
+        // Executa a consulta no banco de dados
+        const { rows } = await pool.query(query, params);
+
+        // Recupera o id da categoria inserida
+        const id = rows[0].id;
+
+        // Retorna a resposta com os dados da nova categoria
+        res.json({
+            success: true,
+            categoria: {
+                id,
+                nome,
+                icone
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao criar categoria:', error);  // Log de erro mais detalhado
+        res.status(500).json({ success: false, message: 'Erro ao criar categoria' });
+    }
+});
 
 app.post('/api/pedidos/:id/status', verificarAutenticacao, async (req, res) => {
     const { id } = req.params;
@@ -1896,11 +2251,106 @@ app.post('/api/pedidos/:id/status', verificarAutenticacao, async (req, res) => {
         client.release();
     }
 });
+const fs = require('fs'); // Importando o módulo fs
+
+const { promises: fsPromises } = fs;
+
+function similarityScore(str1, str2) {
+    str1 = str1.toLowerCase();
+    str2 = str2.toLowerCase();
+    
+    if (str1 === str2) return 1;
+    if (str1.includes(str2) || str2.includes(str1)) return 0.8;
+    
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const maxDist = Math.floor(Math.max(len1, len2) / 2) - 1;
+    let matches = 0;
+    
+    const hash1 = {};
+    const hash2 = {};
+    
+    for (let i = 0; i < len1; i++) {
+        const ch = str1[i];
+        hash1[ch] = (hash1[ch] || 0) + 1;
+    }
+    
+    for (let i = 0; i < len2; i++) {
+        const ch = str2[i];
+        hash2[ch] = (hash2[ch] || 0) + 1;
+    }
+    
+    for (const key in hash1) {
+        if (hash2[key]) {
+            matches += Math.min(hash1[key], hash2[key]);
+        }
+    }
+    
+    return (2.0 * matches) / (len1 + len2);
+}
+
+app.get('/api/icons/search', async (req, res) => {
+    const term = req.query.term.toLowerCase(); // Termo digitado pelo usuário
+    const iconMap = {
+        'pizza': 'pizza.png',
+        'hamburguer': 'hamburger.png',
+        'burger': 'hamburger.png',
+        'bebida': 'drink.png',
+        'sobremesa': 'dessert.png',
+        'salada': 'salada.png',
+        'italiana': 'italiana.png',
+        'frango': 'chicken.png',
+        'carne': 'carnes.png',
+        'peixe': 'fish.png',
+        'sushi': 'sushi.png',
+        'lanche': 'sandwich.png',
+        'cafe': 'coffee.png',
+        'doce': 'candy.png',
+        'salgados':'salgados.png'
+    };
+
+    try {
+        let iconFileName = 'default-category.png'; // Valor padrão caso não encontre
+        let bestMatch = { score: 0, fileName: 'default-category.png' };
+        // Busca o ícone baseado no termo digitado, verificando se o termo está incluído no nome
+        for (const [key, fileName] of Object.entries(iconMap)) {
+            const score = similarityScore(term, key);
+            if (score > bestMatch.score) {
+                bestMatch = { score, fileName };
+            }
+        }
+        if (bestMatch.score > 0.7) {
+            iconFileName = bestMatch.fileName;
+        } else {
+            iconFileName = 'sem.png';
+        }
+        // Caminho do ícone onde será salvo
+        const iconPath = path.join(__dirname, '..', 'public', 'images', 'icons', iconFileName);
+
+        // Verifica se o arquivo do ícone já existe no diretório
+        try {
+            await fsPromises.access(iconPath);
+        } catch {
+            // Se não existir, copia o ícone do diretório de origem para o destino
+            const sourceIconPath = path.join(__dirname, '..', 'public', 'images', 'icons', 'source', iconFileName);
+            await fsPromises.copyFile(sourceIconPath, iconPath);
+        }
+
+        // Retorna o URL do ícone para a resposta
+        res.json({ iconUrl: `/images/icons/${iconFileName}` });
+    } catch (error) {
+        console.error('Error handling icon:', error);
+        res.json({ iconUrl: '/images/icons/sem.png' });
+    }
+});
 
 ///193.186.4.239
 // Iniciar servidor 192.168.1.3
 const HOST = '0.0.0.0'; // Permite acesso via IP na rede local
-const PORT = process.env.PORT || 2000;
-app.listen(PORT, HOST, () => {
-    console.log(`Servidor rodando em http://${HOST}:${PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    if (process.env.NODE_ENV !== 'production') {
+       // startNgrok();
+    }
 });
