@@ -1,0 +1,122 @@
+<%- include('../header') %>
+<link rel="stylesheet" href="/css/dashboard.css">
+
+<div class="conteudo-principal">
+    <div class="card-header-principal">
+        <h2>Dashboard do Garçom</h2>
+        <div class="garcom-info">
+            <span>Olá, <%= garcom.nome %></span>
+            <a href="/logout" class="btn-secundario">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pedidos do Dia -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Pedidos do Dia</h3>
+                </div>
+                <div class="card-conteudo">
+                    <% if (pedidos && pedidos.length > 0) { %>
+                        <div class="tabela-responsiva">
+                            <table class="tabela">
+                                <thead>
+                                    <tr>
+                                        <th>Mesa</th>
+                                        <th>Status</th>
+                                        <th>Valor Total</th>
+                                        <th>Data/Hora</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% pedidos.forEach(pedido => { %>
+                                        <tr>
+                                            <td><%= pedido.mesa_nome || 'Delivery' %></td>
+                                            <td>
+                                                <span class="status-badge status-<%= pedido.status %>">
+                                                    <%= pedido.status %>
+                                                </span>
+                                            </td>
+                                            <td>R$ <%= pedido.valor_total.toFixed(2) %></td>
+                                            <td><%= new Date(pedido.created_at).toLocaleString('pt-BR') %></td>
+                                            <td>
+                                                <button class="btn-acao btn-visualizar" ">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alerta alerta-info">
+                            <i class="fas fa-info-circle"></i>
+                            Nenhum pedido para hoje.
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Visualização do Pedido -->
+<div class="modal-overlay" id="modalPedido">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h5>
+                <i class="fas fa-receipt"></i> 
+                Detalhes do Pedido
+            </h5>
+            <button class="btn-fechar" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content" id="detalhesPedido">
+            <!-- Conteúdo será carregado via JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script>
+    async function visualizarPedido(pedidoId) {
+        try {
+            const response = await fetch(`/pedidos/${pedidoId}`);
+            const pedido = await response.json();
+            
+            const detalhesPedido = document.getElementById('detalhesPedido');
+            detalhesPedido.innerHTML = `
+                <div class="pedido-info">
+                    <p><strong>Mesa:</strong> ${pedido.mesa_nome || 'Delivery'}</p>
+                    <p><strong>Status:</strong> <span class="status-badge status-${pedido.status}">${pedido.status}</span></p>
+                    <p><strong>Data/Hora:</strong> ${new Date(pedido.created_at).toLocaleString('pt-BR')}</p>
+                    <p><strong>Valor Total:</strong> R$ ${pedido.valor_total.toFixed(2)}</p>
+                </div>
+                <div class="itens-pedido">
+                    <h6>Itens do Pedido:</h6>
+                    <ul>
+                        ${pedido.itens.map(item => `
+                            <li>
+                                ${item.quantidade}x ${item.nome}
+                                ${item.complementos ? `<br><small>Complementos: ${item.complementos}</small>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalPedido'));
+            modal.show();
+        } catch (error) {
+            console.error('Erro ao carregar detalhes do pedido:', error);
+            alert('Erro ao carregar detalhes do pedido. Tente novamente.');
+        }
+    }
+</script>
+
+<%- include('../footer') %> 

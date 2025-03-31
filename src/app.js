@@ -119,6 +119,7 @@ const restauranteResult = await client.query(
     `SELECT 
      r.id AS restaurante_id,
      u.id AS usuario_id, 
+     r.nome AS nome,
      u.username 
      FROM usuarios u 
      INNER JOIN restaurantes r ON r.usuario_id = u.id 
@@ -136,6 +137,8 @@ console.log("Resultado da busca:", restauranteResult.rows);
         console.log("consultar ",restauranteResult.rows[0].restaurante_id );
          req.session.id_restaurante=restauranteResult.rows[0].restaurante_id
         // Modified query to include restaurant ID
+
+        
         const query = `
         SELECT DISTINCT ON (p.id)
             p.id AS prato_id,
@@ -154,7 +157,7 @@ console.log("Resultado da busca:", restauranteResult.rows);
         LEFT JOIN complementos c ON p.id = c.prato_id
         LEFT JOIN categorias_modal cat ON p.restaurante_id = cat.id_restaurante
         WHERE p.restaurante_id = $1
-        ORDER BY p.id, p.ordem ASC;
+        ORDER BY p.id  ASC;
         `;
         
         const result = await client.query(query, [req.session.id_restaurante]);
@@ -166,6 +169,7 @@ console.log("Resultado da busca:", restauranteResult.rows);
             if (!pratosMap.has(row.prato_id)) {
                 pratosMap.set(row.prato_id, {
                     id: row.prato_id,
+                    ordem:row.ordem,
                     nome: row.prato_nome,
                     categoria: row.categoria,
                     icone: row.categoria_icone,
@@ -177,7 +181,7 @@ console.log("Resultado da busca:", restauranteResult.rows);
                 });
             }
         
-            console.log("consultar ",row.categoria_icone);
+          
             if (row.complemento_id && !pratosMap.get(row.prato_id).opcionais.some(opt => opt.id === row.complemento_id)) {
                 pratosMap.get(row.prato_id).opcionais.push({
                     id: row.complemento_id,
@@ -186,14 +190,14 @@ console.log("Resultado da busca:", restauranteResult.rows);
                 });
             }
         });
+       // Converter o mapa para um array e ordenar pelo campo 'ordem'
+     const cardapio = Array.from(pratosMap.values()).sort((a, b) => a.ordem - b.ordem);;
        
-        const cardapio = Array.from(pratosMap.values());
-       
-       console.log(   'titulo:',restauranteResult.rows[0].username);
+
         res.render('cardapio_digital', { 
             cardapio, 
             telefone: req.session.telefone,
-            titulo:restauranteResult.rows[0].username,
+            titulo:restauranteResult.rows[0].nome,
             carrinho: [] // O carrinho agora é gerenciado pelo localStorage no cliente
         });
     } catch (error) {
@@ -268,19 +272,24 @@ app.get('/cardapio', async (req, res) => {
 
         // Modified query to include restaurant ID
         const query = `
-            SELECT 
-                p.id AS prato_id, 
-                p.restaurante_id AS restaurante_id, 
-                p.nome AS prato_nome, 
-                p.descricao AS descricao, 
-                p.preco AS prato_preco, 
-                p.imagem AS prato_imagem, 
-                c.id AS complemento_id, 
-                c.nome AS complemento_nome, 
-                c.preco_adicional
-            FROM pratos p
-            LEFT JOIN complementos c ON p.id = c.prato_id
-            WHERE p.restaurante_id = $1;
+        SELECT DISTINCT ON (p.id)
+            p.id AS prato_id,
+            p.categoria AS categoria,
+            p.restaurante_id AS restaurante_id,
+            p.nome AS prato_nome,
+            p.descricao AS descricao,
+            p.preco AS prato_preco,
+            p.imagem AS prato_imagem,
+            p.ordem,
+            c.id AS complemento_id,
+            c.nome AS complemento_nome,
+            c.preco_adicional,
+            cat.icone AS categoria_icone
+        FROM pratos p
+        LEFT JOIN complementos c ON p.id = c.prato_id
+        LEFT JOIN categorias_modal cat ON p.restaurante_id = cat.id_restaurante
+        WHERE p.restaurante_id = $1
+        ORDER BY p.id  ASC;
         `;
         
         const result = await client.query(query, [req.session.id_restaurante]);
@@ -292,31 +301,35 @@ app.get('/cardapio', async (req, res) => {
             if (!pratosMap.has(row.prato_id)) {
                 pratosMap.set(row.prato_id, {
                     id: row.prato_id,
+                    ordem:row.ordem,
                     nome: row.prato_nome,
+                    categoria: row.categoria,
+                    icone: row.categoria_icone,
                     preco: parseFloat(row.prato_preco),
-                    imagem:row.prato_imagem,
-                    descricao:row.descricao,
-                    restaurante_id:row.restaurante_id,
+                    imagem: row.prato_imagem,
+                    descricao: row.descricao,
+                    restaurante_id: row.restaurante_id,
                     opcionais: []
                 });
             }
-            
-            if (row.complemento_id) {
+        
+          
+            if (row.complemento_id && !pratosMap.get(row.prato_id).opcionais.some(opt => opt.id === row.complemento_id)) {
                 pratosMap.get(row.prato_id).opcionais.push({
                     id: row.complemento_id,
                     nome: row.complemento_nome,
-                    preco_adicional: parseFloat(row.preco_adicional),
-                   
+                    preco_adicional: parseFloat(row.preco_adicional)
                 });
             }
         });
+       // Converter o mapa para um array e ordenar pelo campo 'ordem'
+     const cardapio = Array.from(pratosMap.values()).sort((a, b) => a.ordem - b.ordem);;
        
-        const cardapio = Array.from(pratosMap.values());
        
         ///console.log(JSON.stringify(cardapio, null, 2));
         res.render('cardapio_digital', { 
             cardapio,  
-            titulo:restauranteResult.rows[0].username,
+            titulo:restauranteResult.rows[0].nome,
             telefone: req.session.telefone,
             carrinho: [] // O carrinho agora é gerenciado pelo localStorage no cliente
         });
@@ -1039,18 +1052,33 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    const client = await conectarBanco();
+    let { username, password } = req.body;
+
+    // Remove espaços extras e garante que o username seja somente números
+    username = username.trim().replace(/\D/g, ''); // Remove qualquer caractere que não seja número
+    password = password.trim(); // Remove espaços extras
+
     console.log('Tentando fazer login com:', username, password);
+
+    const client = await conectarBanco();
+
     try {
+        // Verifica se o número de telefone ('tell') corresponde
         const result = await client.query('SELECT * FROM usuarios WHERE tell = $1', [username]);
+        console.log('Resultado', result);
+
         const usuarios = result.rows;
+
         if (usuarios.length === 0) {
             return res.render('login', { erro: 'Usuário não encontrado' });
         }
+
+        // Verifica a senha
         if (!(await bcrypt.compare(password, usuarios[0].password))) {
-            return res.render('login', { erro: 'Usuário ou senha inválidos!' });
+            return res.render('login', { erro: 'Usuário ou senha inválidos! 1078' });
         }
+
+        // Se tudo estiver correto, salva a sessão do usuário
         req.session.usuario = { id: usuarios[0].id, username: usuarios[0].username };
       
       
@@ -1137,7 +1165,7 @@ app.get('/dashboard', verificarAutenticacao, async (req, res) => {
         
         // Get pedidos counts
         const pedidosCounts = await getPedidosCounts(restaurante.id);
-
+         console.log('pedidos ',pedidosCounts)
         res.render('dashboard', {
             currentPage: 'dashboard',
             restaurante,

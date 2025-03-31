@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
+<head>    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cardápio Digital - Lanchonete Bot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,7 +12,7 @@
     <!-- Header -->
    <div class="header">
     <div class="header-content">
-        <h1>Lanchonete Bot</h1>
+        <h1><%=titulo %></h1>
         <div class="header-right">
             <i class="fas fa-search header-search-icon"></i>
             <div class="carrinho-header">
@@ -84,7 +83,12 @@
                         <h3 class="produto-nome"><%= produto.nome %></h3>
                         <h4 class="produto-descricao"><%= produto.descricao %></h4>
                         <p class="produto-preco">R$ <%= typeof produto.preco === 'number' ? produto.preco.toFixed(2) : '0.00' %></p>
+                        <button class="add-button">
+                            <i class="fas fa-shopping-cart"></i>
+                        </button>
                     </div>
+
+                   
                 </div>
             <% }); %>
         </div>

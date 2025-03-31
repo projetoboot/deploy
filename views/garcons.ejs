@@ -1,0 +1,187 @@
+<%- include('header') %>
+<link rel="stylesheet" href="/css/dashboard.css">
+
+<!-- Conteúdo Principal -->
+<div class="conteudo-principal">
+    <div class="card-header-principal">
+        <h2>Gerenciar Garçons</h2>
+        <button class="btn-adicionar" data-bs-toggle="modal" data-bs-target="#modalNovoGarcom">
+            <i class="fas fa-plus"></i> Adicionar Novo Garçom
+        </button>
+    </div>
+
+    <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+        <div class="alerta alerta-sucesso">
+            <i class="fas fa-check-circle"></i>
+            <%= success[0] %>
+        </div>
+    <% } %>
+    
+    <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+        <div class="alerta alerta-erro">
+            <i class="fas fa-exclamation-circle"></i>
+            <%= error[0] %>
+        </div>
+    <% } %>
+
+    <% if (garcons && garcons.length > 0) { %>
+        <div class="card-conteudo">
+            <div class="tabela-responsiva">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Código de Acesso</th>
+                            <th>Data de Cadastro</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% garcons.forEach(garcom => { %>
+                            <tr>
+                                <td><%= garcom.nome %></td>
+                                <td><%= garcom.email %></td>
+                                <td><%= garcom.telefone %></td>
+                                <td><code style="background: #f8f9fa; padding: 4px 8px; border-radius: 4px;"><%= garcom.codigo_acesso %></code></td>
+                                <td><%= new Date(garcom.created_at).toLocaleDateString('pt-BR') %></td>
+                                <td>
+                                    <div class="acoes-grupo">
+                                        <button class="btn-acao btn-excluir" data-id="<%= garcom.id %>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <% } else { %>
+        <div class="alerta alerta-info">
+            <i class="fas fa-info-circle"></i>
+            Nenhum garçom cadastrado. Clique em "Adicionar Novo Garçom" para começar.
+        </div>
+    <% } %>
+</div>
+
+<!-- Modal de Novo Garçom -->
+<div class="modal-overlay" id="modalNovoGarcom">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h5>
+                <i class="fas fa-user-plus"></i> 
+                Novo Garçom
+            </h5>
+            <button class="btn-fechar" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form action="/dashboard/garcons/novo" method="POST">
+            <div class="modal-content">
+                <div class="form-group">
+                    <label for="nome" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="senha" class="form-label">Senha</label>
+                    <input type="password" class="form-control" id="senha" name="senha" required>
+                </div>
+                <div class="form-group">
+                    <label for="telefone" class="form-label">Telefone</label>
+                    <input type="tel" class="form-control" id="telefone" name="telefone" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secundario" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-adicionar">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal-overlay" id="modalConfirmacao">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h5>
+                <i class="fas fa-exclamation-triangle"></i> 
+                Confirmar Exclusão
+            </h5>
+            <button class="btn-fechar" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <p>Tem certeza que deseja excluir este garçom? Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secundario" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn-perigo" id="btnConfirmarExclusao">
+                <i class="fas fa-trash-alt"></i> Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalConfirmacao = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+        let garcomIdParaExcluir = null;
+        
+        document.querySelectorAll('.btn-excluir').forEach(btn => {
+            btn.addEventListener('click', function() {
+                garcomIdParaExcluir = this.getAttribute('data-id');
+                modalConfirmacao.show();
+            });
+        });
+        
+        document.getElementById('btnConfirmarExclusao').addEventListener('click', async function() {
+            if (garcomIdParaExcluir) {
+                try {
+                    const response = await fetch(`/dashboard/garcons/excluir/${garcomIdParaExcluir}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        // Remove a linha da tabela
+                        const row = document.querySelector(`tr[data-id="${garcomIdParaExcluir}"]`);
+                        if (row) row.remove();
+                        
+                        // Mostra mensagem de sucesso
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alerta alerta-sucesso';
+                        alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Garçom excluído com sucesso!';
+                        document.querySelector('.conteudo-principal').insertBefore(alertDiv, document.querySelector('.card-header-principal'));
+                        
+                        // Remove o alerta após 3 segundos
+                        setTimeout(() => alertDiv.remove(), 3000);
+                    } else {
+                        throw new Error('Erro ao excluir o garçom');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                    alert('Erro ao excluir o garçom. Tente novamente.');
+                }
+                modalConfirmacao.hide();
+            }
+        });
+    });
+</script>
+
+<%- include('footer') %> 

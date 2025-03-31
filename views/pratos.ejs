@@ -151,9 +151,19 @@
                                 <p class="descricao"><%= prato.descricao %></p>
                                 
                                 <div class="prato-detalhes">
-                                    <span class="preco-badge price-display" data-id="<%= prato.id %>" data-price="<%= prato.preco_base || prato.preco %>">
-                                        R$ <%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>
-                                    </span>
+                                    <div class="preco-container">
+                                        <span class="preco-badge price-display" data-id="<%= prato.id %>" data-price="<%= prato.preco_base || prato.preco %>">
+                                            R$ <%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>
+                                        </span>
+                                        <div class="preco-edit price-edit">
+                                            <div class="input-grupo">
+                                                <span>R$</span>
+                                                <input type="text" class="price-input" value="<%= parseFloat(prato.preco_base || prato.preco).toFixed(2).replace('.', ',') %>">
+                                                <button class="btn-icon btn-save-price"><i class="fas fa-check"></i></button>
+                                                <button class="btn-icon btn-cancel-price"><i class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <span class="status-badge <%= prato.disponivel ? 'disponivel' : 'indisponivel' %> toggle-disponivel"
                                           data-id="<%= prato.id %>"
@@ -234,17 +244,21 @@
                     });
 
                     if (response.ok) {
-                        // Remove the row from the table
+                        // Remove o elemento da visualização desktop
                         const row = document.querySelector(`tr[data-id="${pratoIdParaExcluir}"]`);
                         if (row) row.remove();
                         
-                        // Show success message
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = 'alert alert-success';
-                        alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Prato excluído com sucesso!';
-                        document.querySelector('.col-12').insertBefore(alertDiv, document.querySelector('.mb-4'));
+                        // Remove o elemento da visualização mobile
+                        const card = document.querySelector(`.card-prato[data-id="${pratoIdParaExcluir}"]`);
+                        if (card) card.remove();
                         
-                        // Auto-hide the alert after 3 seconds
+                        // Mostra mensagem de sucesso
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alerta alerta-sucesso';
+                        alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Prato excluído com sucesso!';
+                        document.querySelector('.conteudo-principal').insertBefore(alertDiv, document.querySelector('.card-header-principal'));
+                        
+                        // Remove o alerta após 3 segundos
                         setTimeout(() => alertDiv.remove(), 3000);
                     } else {
                         throw new Error('Erro ao excluir o prato');
@@ -275,10 +289,21 @@
                 });
 
                 if (response.ok) {
-                    // Update the badge
-                    this.className = `badge ${newStatus ? 'bg-success' : 'bg-danger'} toggle-disponivel`;
-                    this.textContent = newStatus ? 'Sim' : 'Não';
-                    this.dataset.disponivel = newStatus;
+                    // Atualiza o badge na visualização desktop
+                    const desktopBadge = document.querySelector(`tr[data-id="${pratoId}"] .toggle-disponivel`);
+                    if (desktopBadge) {
+                        desktopBadge.className = `status-badge ${newStatus ? 'disponivel' : 'indisponivel'} toggle-disponivel`;
+                        desktopBadge.textContent = newStatus ? 'Sim' : 'Não';
+                        desktopBadge.dataset.disponivel = newStatus;
+                    }
+
+                    // Atualiza o badge na visualização mobile
+                    const mobileBadge = document.querySelector(`.card-prato[data-id="${pratoId}"] .toggle-disponivel`);
+                    if (mobileBadge) {
+                        mobileBadge.className = `status-badge ${newStatus ? 'disponivel' : 'indisponivel'} toggle-disponivel`;
+                        mobileBadge.textContent = newStatus ? 'Disponível' : 'Indisponível';
+                        mobileBadge.dataset.disponivel = newStatus;
+                    }
                 } else {
                     alert('Erro ao atualizar status');
                 }
@@ -292,26 +317,26 @@
     // Price editing functionality
     document.querySelectorAll('.price-display').forEach(priceSpan => {
         priceSpan.addEventListener('click', function() {
-            const td = this.closest('td');
+            const container = this.closest('.preco-container') || this.closest('td');
             this.style.display = 'none';
-            td.querySelector('.price-edit').style.display = 'flex';
-            td.querySelector('.price-input').focus();
+            container.querySelector('.price-edit').style.display = 'flex';
+            container.querySelector('.price-input').focus();
         });
     });
 
     document.querySelectorAll('.btn-cancel-price').forEach(btn => {
         btn.addEventListener('click', function() {
-            const td = this.closest('td');
-            td.querySelector('.price-edit').style.display = 'none';
-            td.querySelector('.price-display').style.display = 'inline-block';
+            const container = this.closest('.preco-container') || this.closest('td');
+            container.querySelector('.price-edit').style.display = 'none';
+            container.querySelector('.price-display').style.display = 'inline-block';
         });
     });
 
     document.querySelectorAll('.btn-save-price').forEach(btn => {
         btn.addEventListener('click', async function() {
-            const td = this.closest('td');
-            const priceDisplay = td.querySelector('.price-display');
-            const priceInput = td.querySelector('.price-input');
+            const container = this.closest('.preco-container') || this.closest('td');
+            const priceDisplay = container.querySelector('.price-display');
+            const priceInput = container.querySelector('.price-input');
             const pratoId = priceDisplay.dataset.id;
             const newPrice = priceInput.value.replace(',', '.');
 
@@ -325,9 +350,20 @@
                 });
 
                 if (response.ok) {
-                    priceDisplay.textContent = `R$ ${parseFloat(newPrice).toFixed(2).replace('.', ',')}`;
-                    td.querySelector('.price-edit').style.display = 'none';
-                    priceDisplay.style.display = 'inline-block';
+                    // Atualiza o preço na visualização desktop
+                    const desktopPrice = document.querySelector(`tr[data-id="${pratoId}"] .price-display`);
+                    if (desktopPrice) {
+                        desktopPrice.textContent = `R$ ${parseFloat(newPrice).toFixed(2).replace('.', ',')}`;
+                    }
+
+                    // Atualiza o preço na visualização mobile
+                    const mobilePrice = document.querySelector(`.card-prato[data-id="${pratoId}"] .price-display`);
+                    if (mobilePrice) {
+                        mobilePrice.textContent = `R$ ${parseFloat(newPrice).toFixed(2).replace('.', ',')}`;
+                    }
+
+                    container.querySelector('.price-edit').style.display = 'none';
+                    container.querySelector('.price-display').style.display = 'inline-block';
                 } else {
                     alert('Erro ao atualizar preço');
                 }
@@ -347,61 +383,55 @@
         });
     });
 
+    // Inicializar Sortable para desktop
+    const tbody = document.getElementById('sortable-dishes');
+    if (tbody) {
+        new Sortable(tbody, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: handleReorder
+        });
+    }
+
+    // Inicializar Sortable para mobile
+    const mobileContainer = document.getElementById('sortable-dishes-mobile');
+    if (mobileContainer) {
+        new Sortable(mobileContainer, {
+            handle: '.drag-handle-mobile',
+            animation: 150,
+            onEnd: handleReorder
+        });
+    }
+
+    // Função unificada para lidar com reordenação
+    async function handleReorder(evt) {
+        const container = evt.to;
+        const items = Array.from(container.children);
+        const newOrder = items.map((item, index) => ({
+            id: item.dataset.id,
+            ordem: index
+        }));
+
+        try {
+            const response = await fetch('/dashboard/pratos/reorder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ordem: newOrder })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao atualizar ordem');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao salvar a nova ordem dos pratos');
+        }
+    }
 </script>
 
 <%- include('footer') %>
-
-<!-- Add this script at the bottom of the file, before the closing </script> tag -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar Sortable para desktop (existente)
-        const tbody = document.getElementById('sortable-dishes');
-        if (tbody) {
-            new Sortable(tbody, {
-                handle: '.drag-handle',
-                animation: 150,
-                onEnd: handleReorder
-            });
-        }
-
-        // Inicializar Sortable para mobile
-        const mobileContainer = document.getElementById('sortable-dishes-mobile');
-        if (mobileContainer) {
-            new Sortable(mobileContainer, {
-                handle: '.drag-handle-mobile',
-                animation: 150,
-                onEnd: handleReorder
-            });
-        }
-
-        // Função unificada para lidar com reordenação
-        async function handleReorder(evt) {
-            const container = evt.to;
-            const items = Array.from(container.children);
-            const newOrder = items.map((item, index) => ({
-                id: item.dataset.id,
-                ordem: index
-            }));
-
-            try {
-                const response = await fetch('/dashboard/pratos/reorder', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ ordem: newOrder })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao atualizar ordem');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro ao salvar a nova ordem dos pratos');
-            }
-        }
-    });
-</script>
 
 <style>
     .drag-handle {
