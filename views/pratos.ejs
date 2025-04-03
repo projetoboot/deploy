@@ -115,11 +115,11 @@
                                 </td>
                                 <td>
                                     <div class="acoes-grupo">
-                                        <a href="/dashboard/pratos/editar/<%= prato.id %>" class="btn-acao btn-editar">
-                                            <i class="fas fa-edit"></i>
+                                        <a href="/dashboard/pratos/editar/<%= prato.id %>" class="btn-acao btn-editar" title="Editar prato">
+                                            <i class="fas fa-edit"></i> Editar
                                         </a>
-                                        <button class="btn-acao btn-excluir" data-id="<%= prato.id %>">
-                                            <i class="fas fa-trash-alt"></i>
+                                        <button class="btn-acao btn-excluir" data-id="<%= prato.id %>" title="Excluir prato">
+                                            <i class="fas fa-trash-alt"></i> Excluir
                                         </button>
                                     </div>
                                 </td>
@@ -194,28 +194,30 @@
     <% } %>
 
 
+<script src="/js/pratos.js"></script>
+
 <!-- Modal de confirmação -->
-<div class="modal-overlay" id="modalConfirmacao">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h5>
-                <i class="fas fa-exclamation-triangle"></i> 
-                Confirmar Exclusão
-            </h5>
-            <button class="btn-fechar" data-bs-dismiss="modal">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalConfirmacaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <p>Tem certeza que deseja excluir este prato? Esta ação não pode ser desfeita.</p>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-secundario" data-bs-dismiss="modal">
-                <i class="fas fa-times"></i> Cancelar
-            </button>
-            <button class="btn-perigo" id="btnConfirmarExclusao">
-                <i class="fas fa-trash-alt"></i> Excluir
-            </button>
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfirmacaoLabel">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir este prato? Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">
+                    <i class="fas fa-trash-alt"></i> Excluir
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -231,44 +233,6 @@
                 pratoIdParaExcluir = this.getAttribute('data-id');
                 modal.show();
             });
-        });
-        
-        document.getElementById('btnConfirmarExclusao').addEventListener('click', async function() {
-            if (pratoIdParaExcluir) {
-                try {
-                    const response = await fetch(`/dashboard/pratos/excluir/${pratoIdParaExcluir}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        // Remove o elemento da visualização desktop
-                        const row = document.querySelector(`tr[data-id="${pratoIdParaExcluir}"]`);
-                        if (row) row.remove();
-                        
-                        // Remove o elemento da visualização mobile
-                        const card = document.querySelector(`.card-prato[data-id="${pratoIdParaExcluir}"]`);
-                        if (card) card.remove();
-                        
-                        // Mostra mensagem de sucesso
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = 'alerta alerta-sucesso';
-                        alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Prato excluído com sucesso!';
-                        document.querySelector('.conteudo-principal').insertBefore(alertDiv, document.querySelector('.card-header-principal'));
-                        
-                        // Remove o alerta após 3 segundos
-                        setTimeout(() => alertDiv.remove(), 3000);
-                    } else {
-                        throw new Error('Erro ao excluir o prato');
-                    }
-                } catch (error) {
-                    console.error('Erro:', error);
-                    alert('Erro ao excluir o prato. Tente novamente.');
-                }
-                modal.hide();
-            }
         });
     });
 

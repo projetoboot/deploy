@@ -61,9 +61,9 @@ app.use(flash()); // Configuração CORRETA do flash
 
 async function conectarBanco() {
     try {
-        const client = await pool.connect();
+        const connection = await pool.getConnection();
         console.log('Conexão com o banco de dados estabelecida.');
-        return client;
+        return connection;
     } catch (error) {
         console.error('Erro ao conectar ao banco de dados:', error);
         throw error;
@@ -689,37 +689,41 @@ app.get('/dashboard/pratos/editar/:id', verificarAutenticacao, async (req, res) 
     const client = await conectarBanco();
     try {
         // Buscar o prato
-        const prato = await client.query(
-            'SELECT * FROM pratos WHERE id = $1 AND restaurante_id = $2',
+        const [prato] = await client.query(
+            'SELECT * FROM pratos WHERE id = ? AND restaurante_id = ?',
             [req.params.id, req.session.usuario.restaurante_id]
         );
 
         // Buscar os ingredientes do prato
-        const ingredientes = await client.query(
-            'SELECT * FROM ingredientes WHERE prato_id = $1',
+        const [ingredientes] = await client.query(
+            'SELECT * FROM ingredientes WHERE prato_id = ?',
             [req.params.id]
         );
 
         // Buscar todas as categorias disponíveis
-        const categorias = await client.query(
-            'SELECT id, nome FROM categorias WHERE restaurante_id = $1 ORDER BY nome',
+        const [categorias] = await client.query(
+            'SELECT id, nome FROM categorias WHERE restaurante_id = ? ORDER BY nome',
             [req.session.usuario.restaurante_id]
         );
 
-        if (prato.rows.length === 0) {
+        if (prato.length === 0) {
             req.flash('error', 'Prato não encontrado');
             return res.redirect('/dashboard/pratos');
         }
 
         res.render('prato_editar', {
-            prato: prato.rows[0],            
-            ingredientes: ingredientes.rows,
-            categorias: categorias.rows,
+            prato: prato[0],            
+            ingredientes: ingredientes,
+            categorias: categorias,
             success: req.flash('success'),
             error: req.flash('error')
         });
     } catch (error) {
-        // ... existing error handling ...
+        console.error('Erro ao carregar prato:', error);
+        req.flash('error', 'Erro ao carregar prato');
+        res.redirect('/dashboard/pratos');
+    } finally {
+        client.release();
     }
 });
 

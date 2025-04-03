@@ -5,27 +5,27 @@
     <title>Cardápio Digital - Lanchonete Bot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/cardapio.css?<%= Date.now() %>">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="/css/rating.css?<%= Date.now() %>">
+    <link href = "fonts/roboto/stylesheet.css" rel = "stylesheet" type = "text/css" />
 </head>
 <body>
     <!-- Header -->
    <div class="header">
     <div class="header-content">
         <h1><%=titulo %></h1>
+        <i class="fas fa-search header-search-icon"></i>
         <div class="header-right">
-            <i class="fas fa-search header-search-icon"></i>
+          
             <div class="carrinho-header">
+                <div class="carrinho-icon-container">
+                    <i "><img src="/images/icons/sacola.png"  class="produto-imagem_micro"> </i>
+                    <span class="carrinho-badge"><%= carrinho ? carrinho.length : 0 %></span>
+                </div>
                 <% if (carrinho && carrinho.length > 0) { %>
                     <div class="carrinho-info">
-                        <span class="carrinho-quantidade"><%= carrinho.length %></span>
                         <span class="carrinho-total">
                             R$ <%= carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2) %>
                         </span>
-                    </div>
-                <% } else { %>
-                    <div class="carrinho-vazio">
-                       
                     </div>
                 <% } %>
             </div>
@@ -39,6 +39,7 @@
         <input type="text" placeholder="Buscar pratos e restaurantes" id="searchInput">
     </div>
     <script src="/js/search-bar.js"></script>
+    <script src="/js/rating.js"></script>
 
     <!-- Navegação de Categorias -->
     <nav class="categorias-nav">
@@ -79,13 +80,29 @@
                      data-imagem="<%= produto.imagem %>"
                      data-opcionais='<%= JSON.stringify(produto.opcionais) %>'>
                     <img src="/uploads/<%= produto.imagem %>" alt="<%= produto.nome %>" class="produto-imagem">
+                    <h4 class="produto-descricao-texto"><%= produto.descricao.length > 200 ? produto.descricao.substring(0, 200) + '...' : produto.descricao %></h4>
                     <div class="produto-info">
-                        <h3 class="produto-nome"><%= produto.nome %></h3>
-                        <h4 class="produto-descricao"><%= produto.descricao %></h4>
-                        <p class="produto-preco">R$ <%= typeof produto.preco === 'number' ? produto.preco.toFixed(2) : '0.00' %></p>
-                        <button class="add-button">
-                            <i class="fas fa-shopping-cart"></i>
-                        </button>
+                        
+                        <div class="produto-info-principal">
+                            <h3 class="produto-nome"><%= produto.nome %></h3>
+                              <p class="produto-preco"><img src="/images/icons/precoreal.png" alt="<%= produto.nome %>" class="produto-imagem_micro">   <%= typeof produto.preco === 'number' ? produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00' %></p>
+                        </div>
+                        <div class="produto-info-secundaria">
+                            <div class="stars">
+                                <p class="produto-time"><img src="/images/icons/time.png" alt="<%= produto.nome %>" class="produto-imagem_micro">   <%= Math.round(produto.tempo_preparo) %> mim</p>
+                                <p class="produto-time"><img src="/images/icons/delivery.png" alt="<%= produto.nome %>" class="produto-imagem_micro">  <%= Math.round(produto.tempo_medio_entrega) %> mim</p>
+                            </div>
+                            <div class="stars">
+                                <i class="fas fa-star" data-rating="1"></i>
+                                <i class="fas fa-star" data-rating="2"></i>
+                                <i class="fas fa-star" data-rating="3"></i>
+                                <i class="fas fa-star" data-rating="4"></i>
+                                <i class="fas fa-star" data-rating="5"></i>
+                            </div>
+                        </div>
+                           
+                       
+                       
                     </div>
 
                    
@@ -202,27 +219,23 @@
 
     <!-- Navegação Inferior -->
     <nav class="nav-bottom">
-        <div class="caixa_nave"> 
+      
         <a href="/" class="nav-item active">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-    </div>
+   
         <a href="#" class="nav-item carrinho-nav-btn">
-          <div class="categoria-icon-2"> </div>
-            <div class="carrinho-icon-wrapper">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="carrinho-badge">0</span>
-            </div>
-            <span class="carrinho-total">R$ 0,00</span>
+         
+            
+           
         </a>
-        <div class="caixa_nave"> 
+       
         <a href="/pedidos" class="nav-item">
             <i class="fas fa-file-alt"></i>
             <span>Pedidos</span>
         </a> </div>
     </nav>
-
     <!-- Scripts -->
     <script src="/js/modal_layout.js"></script>
     <script>

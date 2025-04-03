@@ -1,12 +1,15 @@
-require('dotenv').config();
+const mysql = require('mysql2/promise');
 
 const DB_CONFIG = {
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '719732',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'cardap',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    ssl: false
+    host: 'localhost',
+    user: 'irismar',
+    password: '719732',
+    database: 'lanchonete_bot',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
-module.exports = DB_CONFIG;
+const pool = mysql.createPool(DB_CONFIG);
+
+module.exports = pool;

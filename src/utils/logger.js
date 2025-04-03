@@ -16,9 +16,9 @@ async function saveLog(data) {
     const client = await pool.connect();
     try {
         // Save to database
-        await client.query(
+        await client.execute(
             `INSERT INTO audit_logs (usuario_id, restaurante_id, acao, ip_address, detalhes) 
-             VALUES ($1, $2, $3, $4, $5)`,
+             VALUES (?, ?, ?, ?, ?)`,
             [usuario_id, restaurante_id, acao, ip_address, JSON.stringify(detalhes)]
         );
 

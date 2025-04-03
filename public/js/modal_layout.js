@@ -138,6 +138,19 @@ class Carrinho {
         if (contadorCarrinho) {
             contadorCarrinho.textContent = this.quantidade || 0;
         }
+        // Atualizar o badge do carrinho
+        const badgeCarrinho = document.querySelector('.carrinho-badge');
+        if (badgeCarrinho) {
+            if (this.quantidade > 0) {
+                badgeCarrinho.style.display = 'flex';
+                badgeCarrinho.innerHTML = `
+                    <span class="badge-quantidade">${this.quantidade}</span>
+                    <span class="badge-total">R$ ${this.total.toFixed(2)}</span>
+                `;
+            } else {
+                badgeCarrinho.style.display = 'none';
+            }
+        }
 
         const totalCarrinho = document.querySelector('.carrinho-total');
         if (totalCarrinho) {
@@ -326,13 +339,7 @@ class CardapioUI {
                 this.expandirProduto(card, produto);
 
 
-             imagem.addEventListener('click', () => {
-    card.classList.toggle('expandido');
-    detalhes.classList.toggle('ativo');
-    
-    // Adicionar esta linha para ocultar/mostrar o header
-    document.querySelector('.header').classList.toggle('header-hidden');
-});   
+
             });
         });
     }
@@ -349,24 +356,20 @@ class CardapioUI {
     
         // Alterna o estado expandido do card clicado
         if (card.classList.contains('expandido')) {
-
-            // No evento de clique da imagem
-            imagem.addEventListener('click', () => {
-                card.classList.toggle('expandido');
-                detalhes.classList.toggle('ativo');
-                
-                // Adicionar esta linha para ocultar/mostrar o header
-                document.querySelector('.header').classList.toggle('header-hidden');
-            });
             card.classList.remove('expandido');
             const detalhes = card.querySelector('.produto-detalhes');
             if (detalhes) detalhes.remove();
+            document.querySelector('.header').classList.remove('header-hidden');
         } else {
             card.classList.add('expandido');
+            document.querySelector('.header').classList.add('header-hidden');
+            card.classList.add('expandido');
+            document.querySelector('.header').classList.add('header-hidden');
             
             // Cria a seção de detalhes
             const detalhes = document.createElement('div');
             detalhes.className = 'produto-detalhes';
+            detalhes.addEventListener('click', (e) => e.stopPropagation());
             
             // Adiciona os controles de quantidade
             const quantidadeControle = document.createElement('div');
@@ -513,18 +516,73 @@ class CardapioUI {
         const modalCarrinho = document.getElementById('modalCarrinho');
         if (modalCarrinho) {
             const closeBtn = modalCarrinho.querySelector('.modal-close');
-            const finalizarBtn = modalCarrinho.querySelector('.finalizar-pedido-btn');
+           /// const finalizarBtn = modalCarrinho.querySelector('.finalizar-pedido-btn');
             const continuarBtn = modalCarrinho.querySelector('.continuar-comprando-btn');
+         
 
-            closeBtn.addEventListener('click', () => this.fecharModalCarrinho());
+                    const finalizarBtn = modalCarrinho.querySelector('.finalizar-pedido-btn');
+            
+                    if (finalizarBtn) {
+                        finalizarBtn.addEventListener('click', async () => {
+                            // Verifica se o botão já foi clicado e está desativado
+                            if (finalizarBtn.disabled) {
+                                console.log('Botão já foi clicado. Ignorando novo clique.');
+                                return;
+                            }
+            
+                            // Desativa o botão imediatamente após o primeiro clique
+                            finalizarBtn.disabled = true;
+                            finalizarBtn.textContent = 'Processando...';
+            
+                            try {
+                                // Simula a lógica de finalização do pedido
+                                console.log('Finalizando pedido...');
+                                await this.finalizarPedido(); // Supondo que `finalizarPedido` é uma função assíncrona
+            
+                                // Após o processamento bem-sucedido, redireciona ou fecha o modal
+                                console.log('Pedido finalizado com sucesso!');
+                                // Exemplo: window.location.href = '/pedido-confirmado';
+                            } catch (error) {
+                                console.error('Erro ao finalizar pedido:', error);
+                                alert('Ocorreu um erro ao finalizar o pedido. Por favor, tente novamente.');
+            
+                                // Reativa o botão em caso de erro
+                               
+                            }
+                        });
+                    }
+           
+          
+
+
+
+
+
+
+
             if (finalizarBtn) {
-                finalizarBtn.addEventListener('click', () => this.finalizarPedido());
+                finalizarBtn.addEventListener('click', () => {
+                    // Aqui você pode adicionar a lógica para finalizar o pedido
+                    // Por exemplo, redirecionar para uma página de confirmação
+                    console.log('Finalizando pedido 1...');
+                    finalizarBtn.disabled = true;
+                    ////this.fecharModalCarrinho();
+                });
+            }
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.fecharModalCarrinho());
             }
             
             if (continuarBtn) {
+
+
                 continuarBtn.addEventListener('click', () => this.fecharModalCarrinho());
-            }
             
+            
+            }
+           
+            // Event listener removido para evitar duplicação com carrinho_modal.js
+            // O event listener foi movido para carrinho_modal.js para evitar duplicação de pedidos
             // Fechar modal ao clicar fora
             window.addEventListener('click', (e) => {
                 if (e.target === modalCarrinho) {
@@ -692,9 +750,16 @@ class CardapioUI {
             throw new Error('Dados do carrinho inválidos.');
         }
     }
-
+     
     async finalizarPedido() {
+
         try {
+            const finalizarBtn = document.querySelector('.finalizar-pedido-btn');
+            if (finalizarBtn) {
+                finalizarBtn.disabled = true;
+                finalizarBtn.textContent = 'Processando...';
+            }
+    
             // Validar se há itens no carrinho
             if (this.carrinho.items.length === 0) {
                 alert('Adicione itens ao carrinho antes de finalizar o pedido.');
@@ -757,8 +822,7 @@ class CardapioUI {
                 enderecoEntrega,
                 telefone,
                 total
-            });
-            
+            });            
             // Enviar para o servidor
             const response = await fetch('/finalizar_pedido', {
                 method: 'POST',
@@ -789,16 +853,16 @@ class CardapioUI {
         
             if (!response.ok) {
                 throw new Error('Erro ao finalizar pedido');
-            }
-        
-            const result = await response.json();
-            
+            }        
+            const result = await response.json();            
             if (result.success) {
-                // Limpar o carrinho após pedido bem-sucedido
+                finalizarBtn.disabled = false;
+                finalizarBtn.textContent = 'Finalizar Pedido';
+                console.log("id da url ",result)// Limpar o carrinho após pedido bem-sucedido
                 localStorage.removeItem('carrinho');
-                
+                console.log("id da url ",result.pedido.pedidoId)
                 // Redirecionar para a página de confirmação usando apenas o pedidoId
-                window.location.href = `/pedido_confirmado?pedidoId=${result.pedido.pedidoId}`;
+               window.location.href = `/pedido_confirmado?pedidoId=${result.pedido.pedidoId}`;
             } else {
                 throw new Error(result.error || 'Erro ao processar pedido');
             }

@@ -1,6 +1,48 @@
 <%- include('header', { title: 'Cadastrar Novo Prato' }) %>
 <link rel="stylesheet" href="/css/dashboard.css">
 
+<style>
+    #categorias_suggestions {
+        z-index: 1000;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    
+    #categorias_suggestions .list-group-item {
+        cursor: pointer;
+    }
+    
+    #categorias_suggestions .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .preco-complemento {
+        max-width: 120px;
+    }
+    
+    .complemento-item {
+        transition: all 0.3s ease;
+    }
+    
+    .complemento-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .remover-complemento {
+        transition: all 0.2s ease;
+    }
+    
+    .remover-complemento:hover {
+        transform: scale(1.1);
+    }
+
+    #ingredientes_container.is-invalid {
+        border: 1px solid #dc3545;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+    }
+</style>
+
 <div class="container mt-4">
     <h2>Cadastrar Novo Prato</h2>
     
@@ -24,190 +66,62 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label"><i class="fas fa-tag"></i> Categoria</label>
-            <div class="position-relative">
-                <input type="text" 
-                       class="form-control" 
-                       id="categoria_input" 
-                       name="categoria" 
-                       placeholder="Digite para buscar uma categoria" 
-                       autocomplete="off"
-                       required>
-                <input type="hidden" id="categoria_id" name="categoria_id">
-                <div id="categorias_suggestions" class="position-absolute w-100 mt-1 d-none">
-                    <div class="list-group shadow-sm">
-                        <!-- Suggestions will be dynamically added here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const categoriaInput = document.getElementById('categoria_input');
-            const categoriaIdInput = document.getElementById('categoria_id');
-            const suggestionsDiv = document.getElementById('categorias_suggestions');
-            const suggestionsList = suggestionsDiv.querySelector('.list-group');
-        
-            async function buscarCategorias(termo) {
-                try {
-                    const response = await fetch(`/api/categorias/buscar?termo=${encodeURIComponent(termo)}`);
-                    const data = await response.json();
-                    return data;
-                } catch (error) {
-                    console.error('Erro ao buscar categorias:', error);
-                    return [];
-                }
-            }
-        
-            async function buscarEBaixarIcone(termo) {
-                try {
-                    const response = await fetch(`/api/icons/search?term=${encodeURIComponent(termo)}`);
-                    const data = await response.json();
-                    return data.iconUrl;
-                } catch (error) {
-                    console.error('Erro ao buscar ícone:', error);
-                    return '/images/icons/default-category.png';
-                }
-            }
-        
-            function mostrarSugestoes(categorias) {
-                suggestionsList.innerHTML = '';
-                
-                if (categorias.length === 0) {
-                    const termo = categoriaInput.value.trim();
-                    if (termo) {
-                        const novaCategoria = document.createElement('a');
-                        novaCategoria.href = '#';
-                        novaCategoria.className = 'list-group-item list-group-item-action d-flex align-items-center text-primary';
-                        novaCategoria.innerHTML = `
-                            <div class="spinner-border spinner-border-sm me-2" role="status">
-                                <span class="visually-hidden">Buscando ícone...</span>
-                            </div>
-                            Procurando ícone para "${termo}"...
-                        `;
-                        
-                        suggestionsList.appendChild(novaCategoria);
-                        suggestionsDiv.classList.remove('d-none');
-
-                        // Search and download icon
-                        buscarEBaixarIcone(termo).then(iconUrl => {
-                            novaCategoria.innerHTML = `
-                                <img src="${iconUrl}" alt="${termo}" style="width: 24px; height: 24px; margin-right: 10px;">
-                                Adicionar categoria "${termo}"
-                            `;
-                            
-                            novaCategoria.addEventListener('click', async (e) => {
-                                e.preventDefault();
-                                try {
-                                    const response = await fetch('/api/categorias/nova', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({
-                                            nome: termo,
-                                            icone: iconUrl
-                                        })
-                                    });
-                                    
-                                    const data = await response.json();
-                                    if (data.success) {
-                                        categoriaInput.value = termo;
-                                        categoriaIdInput.value = data.categoria.id;
-                                        suggestionsDiv.classList.add('d-none');
-                                    }
-                                } catch (error) {
-                                    console.error('Erro ao criar categoria:', error);
-                                }
-                            });
-                        });
-                    }
-                } else {
-                    categorias.forEach(categoria => {
-                        const item = document.createElement('a');
-                        item.href = '#';
-                        item.className = 'list-group-item list-group-item-action d-flex align-items-center';
-                        item.innerHTML = `
-                            <i class="fas fa-tag me-2"></i>
-                            ${categoria.nome}
-                        `;
-                        
-                        item.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            categoriaInput.value = categoria.nome;
-                            categoriaIdInput.value = categoria.id;
-                            suggestionsDiv.classList.add('d-none');
-                        });
-                        
-                        suggestionsList.appendChild(item);
-                    });
-                }
-        
-                if (categorias.length === 0) {
-                    const noResults = document.createElement('div');
-                    noResults.className = 'list-group-item text-muted';
-                    noResults.textContent = 'Nenhuma categoria encontrada';
-                    suggestionsList.appendChild(noResults);
-                }
-        
-                suggestionsDiv.classList.remove('d-none');
-            }
-        
-            let timeoutId;
-            categoriaInput.addEventListener('input', () => {
-                clearTimeout(timeoutId);
-                const termo = categoriaInput.value.trim();
-                
-                timeoutId = setTimeout(async () => {
-                    if (termo.length >= 2) {
-                        const categorias = await buscarCategorias(termo);
-                        mostrarSugestoes(categorias);
-                    } else {
-                        suggestionsDiv.classList.add('d-none');
-                    }
-                }, 300);
-            });
-        
-            // Hide suggestions when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!categoriaInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
-                    suggestionsDiv.classList.add('d-none');
-                }
-            });
-        });
-        </script>
-        
-        <style>
-        #categorias_suggestions {
-            z-index: 1000;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        
-        #categorias_suggestions .list-group-item {
-            cursor: pointer;
-        }
-        
-        #categorias_suggestions .list-group-item:hover {
-            background-color: #f8f9fa;
-        }
-        </style>
-        </div>
-        <div class="mb-3">
-            <label class="form-label"><i class="fas fa-dollar-sign"></i> Preço </label>
+            <label class="form-label"><i class="fas fa-dollar-sign"></i> Preço</label>
             <div class="input-group">
                 <span class="input-group-text">R$</span>
-                <input type="text" 
-                       class="form-control" 
-                       id="preco_formatado" 
-                       placeholder="0,00" 
-                       inputmode="numeric"
-                     
-                       required>
-                <input type="hidden" name="preco_base" id="preco_valor">
+                <input type="text" class="form-control" id="preco_formatado" placeholder="0,00" required>
+                <input type="hidden" id="preco_valor" name="preco">
             </div>
-            <small class="form-text text-muted">Digite o valor base em reais (ex: 10,90)</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-tag"></i> Categoria</label>
+            <select class="form-control" name="categoria" required>
+                <option value="">🔍 Selecione uma categoria</option>
+                <% const categorias = {
+                    'Brasileira': '🇧🇷',
+                    'Lanches': '🍔',
+                    'Pizzas': '🍕',
+                    'Italiana': '🍝',
+                    'Japonesa': '🍱',
+                    'Chinesa': '🥢',
+                    'Árabe': '🥙',
+                    'Mexicana': '🌮',
+                    'Marmitas': '🥡',
+                    'Vegetariana': '🥗',
+                    'Fit': '💪',
+                    'Açaí': '🍇',
+                    'Padaria': '🥖',
+                    'Pastel': '🥟',
+                    'Sorvetes': '🍨',
+                    'Espetinhos': '🍖',
+                    'Bebidas': '🥤',
+                    'Porções': '🍟',
+                    'Combos': '📦'
+                }; %>
+                
+                <% for (const [nome, icone] of Object.entries(categorias)) { %>
+                    <option value="<%= nome %>">
+                        <%= icone %> <%= nome %>
+                    </option>
+                <% } %>
+            </select>
+        </div>
+
+        <div class="mb-3" id="ingredientes_container">
+            <label class="form-label"><i class="fas fa-list"></i> Ingredientes</label>
+            <div id="lista_ingredientes"></div>
+            <button type="button" class="btn btn-outline-primary mt-2" id="adicionar_ingrediente">
+                <i class="fas fa-plus"></i> Adicionar Ingrediente
+            </button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-plus-circle"></i> Complementos</label>
+            <div id="lista_complementos"></div>
+            <button type="button" class="btn btn-outline-success mt-2" id="adicionar_complemento">
+                <i class="fas fa-plus"></i> Adicionar Complemento
+            </button>
         </div>
 
         <div class="mb-3">
@@ -217,56 +131,21 @@
                        class="form-control" 
                        name="tempo_preparo" 
                        id="tempo_preparo" 
-                       placeholder="30" 
+                       placeholder="tempo de preparo" 
                        min="1"
                        required>
                 <span class="input-group-text">minutos</span>
             </div>
+            <div class="invalid-feedback">O tempo de preparo é obrigatório</div>
             <small class="form-text text-muted">Digite o tempo estimado de preparo em minutos</small>
         </div>
-        <div class="mb-3">
-            <label class="form-label"><i class="fas fa-list-check"></i> Ingredientes</label>
-            <div id="lista_ingredientes">
-                <div class="input-group mb-2">
-                    <input type="text" class="form-control" name="ingredientes[]" placeholder="Nome do ingrediente">
-                    <div class="input-group-text">
-                        <input type="checkbox" class="form-check-input mt-0" name="ingredientes_removiveis[]" value="1">
-                        <span class="ms-2">Removível</span>
-                    </div>
-                    <button type="button" class="btn btn-outline-danger remover-ingrediente"><i class="fas fa-trash"></i> Remover</button>
-                </div>
-            </div>
-            <button type="button" class="btn btn-outline-primary" id="adicionar_ingrediente"><i class="fas fa-plus-circle"></i> Adicionar Ingrediente</button>
-        </div>
-
-
-         
-        <div class="mb-4">
-            <label class="form-label"><i class="fas fa-plus-circle"></i> Complementos</label>
-            <div id="lista_complementos">
-                <div class="complemento-item input-group mb-2">
-                    <input type="text" class="form-control" name="complementos[]" placeholder="Nome do complemento">
-                    <span class="input-group-text">R$</span>
-                    <input type="text" class="form-control preco-complemento" name="precos_complementos[]" placeholder="0,00">
-                    <span class="input-group-text">Máx.</span>
-                    <input type="number" class="form-control" name="max_escolhas[]" placeholder="1" min="1" style="max-width: 80px;">
-                    <button type="button" class="btn btn-outline-danger remover-complemento">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="adicionar_complemento">
-                <i class="fas fa-plus"></i> Adicionar Complemento
-            </button>
-            <small class="form-text text-muted">
-                Exemplo: Borda recheada (R$ 5,00), Bacon extra (R$ 3,00), etc.
-            </small>
-        </div>  
       
 
         <div class="mb-3">
             <label class="form-label"><i class="fas fa-image"></i> Imagem do Prato</label>
-            <input type="file" class="form-control" name="imagem" accept="image/*">
+            <input type="file" class="form-control" name="imagem" accept="image/*" required>
+            <div class="invalid-feedback">Por favor, selecione uma imagem para o prato</div>
+            <small class="form-text text-muted">Formatos aceitos: JPG, PNG, GIF</small>
         </div>
 
         <div class="mb-3 form-check">
@@ -279,319 +158,6 @@
 </div>
 
 <%- include('footer') %>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const btnMostrarNovaCategoria = document.getElementById('btn_mostrar_nova_categoria');
-        const btnCancelarCategoria = document.getElementById('btn_cancelar_categoria');
-        const btnAdicionarCategoria = document.getElementById('btn_adicionar_categoria');
-        const novaCategoriaContainer = document.getElementById('nova_categoria_container');
-        const novaCategoriaInput = document.getElementById('nova_categoria_nome');
-        const dropdownItems = document.querySelectorAll('.dropdown-item');
-        const categoriaAtual = document.getElementById('categoriaAtual');
-        const categoriaId = document.getElementById('categoria_id');
+<script src="/js/prato_cadastrar.js"></script>
 
-        // Manipular seleção de categoria
-        dropdownItems.forEach(item => {
-            if (item.id !== 'btn_mostrar_nova_categoria') {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    categoriaId.value = this.dataset.id;
-                    categoriaAtual.textContent = this.textContent;
-                });
-            }
-        });
-        
-        // Mostrar o formulário de nova categoria
-        btnMostrarNovaCategoria.addEventListener('click', function(e) {
-            e.preventDefault();
-            novaCategoriaContainer.style.display = 'block';
-            novaCategoriaInput.focus();
-        });
-        
-        // Esconder o formulário de nova categoria
-        btnCancelarCategoria.addEventListener('click', function() {
-            novaCategoriaContainer.style.display = 'none';
-            novaCategoriaInput.value = '';
-        });
-        
-        // Adicionar nova categoria via AJAX
-        btnAdicionarCategoria.addEventListener('click', function() {
-            const nomeCategoriaValue = novaCategoriaInput.value.trim();
-            
-            if (!nomeCategoriaValue) {
-                alert('Por favor, insira um nome para a categoria.');
-                return;
-            }
-            
-            fetch('/dashboard/categorias/nova', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    nome: nomeCategoriaValue
-                }),
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Adicionar nova categoria à lista suspensa
-                    const dropdownMenu = document.querySelector('.dropdown-menu');
-                    const divider = dropdownMenu.querySelector('.dropdown-divider');
-                    const novoItem = document.createElement('li');
-                    novoItem.innerHTML = `<a class="dropdown-item" href="#" data-id="${data.categoria.id}">${data.categoria.nome}</a>`;
-                    dropdownMenu.insertBefore(novoItem, divider);
-                    
-                    // Adicionar evento ao novo item
-                    const novoLink = novoItem.querySelector('a');
-                    novoLink.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        categoriaId.value = data.categoria.id;
-                        categoriaAtual.textContent = data.categoria.nome;
-                    });
-                    
-                    // Selecionar a nova categoria
-                    categoriaId.value = data.categoria.id;
-                    categoriaAtual.textContent = data.categoria.nome;
-                    
-                    // Esconder o formulário
-                    novaCategoriaContainer.style.display = 'none';
-                    
-                    // Limpar o campo
-                    novaCategoriaInput.value = '';
-                    
-                    alert('Categoria criada com sucesso!');
-                } else {
-                    alert('Erro ao criar categoria: ' + (data.message || 'Erro desconhecido'));
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                alert('Erro ao criar categoria. Verifique o console para mais detalhes.');
-            });
-        });
-    });
-</script>        
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Formatação de preços
-        function formatarPreco(input) {
-            let valor = input.value.replace(/[^\d]/g, '');
-            
-            // Converte para formato decimal (divide por 100)
-            valor = (parseInt(valor) / 100).toFixed(2);
-            
-            // Substitui ponto por vírgula para formato brasileiro
-            valor = valor.replace('.', ',');
-            
-            input.value = valor;
-            return valor;
-        }
-
-        // Configuração do preço base
-        const precoFormatado = document.getElementById('preco_formatado');
-        const precoValor = document.getElementById('preco_valor');
-        
-        precoFormatado.addEventListener('input', function() {
-            const valor = formatarPreco(this);
-            precoValor.value = valor.replace(',', '.');
-        });
-        
-        precoFormatado.addEventListener('blur', function() {
-            if (this.value) {
-                let valor = this.value;
-                if (valor.indexOf(',') === -1) {
-                    valor += ',00';
-                } else {
-                    const partes = valor.split(',');
-                    if (partes[1].length === 0) valor += '00';
-                    else if (partes[1].length === 1) valor += '0';
-                }
-                this.value = valor;
-                precoValor.value = valor.replace(',', '.');
-            }
-        });
-
-        // Gerenciamento de ingredientes
-        const listaIngredientes = document.getElementById('lista_ingredientes');
-        const btnAdicionarIngrediente = document.getElementById('adicionar_ingrediente');
-
-        function criarLinhaIngrediente() {
-            const div = document.createElement('div');
-            div.className = 'input-group mb-2';
-            div.innerHTML = `
-                <input type="text" class="form-control" name="ingredientes[]" placeholder="Nome do ingrediente">
-                <div class="input-group-text">
-                    <input type="checkbox" class="form-check-input mt-0" name="ingredientes_removiveis[]" value="1">
-                    <span class="ms-2">Removível</span>
-                </div>
-                <button type="button" class="btn btn-outline-danger remover-ingrediente">Remover</button>
-            `;
-            return div;
-        }
-
-        btnAdicionarIngrediente.addEventListener('click', function() {
-            listaIngredientes.appendChild(criarLinhaIngrediente());
-        });
-
-        listaIngredientes.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remover-ingrediente')) {
-                e.target.closest('.input-group').remove();
-            }
-        });
-
-        // Validação do formulário
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(e) {
-            let isValid = true;
-            let errorMessages = [];
-
-            // Validar nome
-            const nome = document.querySelector('input[name="nome"]');
-            if (!nome.value.trim()) {
-                isValid = false;
-                errorMessages.push('O nome do prato é obrigatório');
-                nome.classList.add('is-invalid');
-            } else {
-                nome.classList.remove('is-invalid');
-            }
-
-            // Validar descrição
-            const descricao = document.querySelector('textarea[name="descricao"]');
-            if (!descricao.value.trim()) {
-                isValid = false;
-                errorMessages.push('A descrição do prato é obrigatória');
-                descricao.classList.add('is-invalid');
-            } else {
-                descricao.classList.remove('is-invalid');
-            }
-
-            // Validar preço
-            const preco = document.getElementById('preco_formatado');
-            if (!preco.value || preco.value === '0,00') {
-                isValid = false;
-                errorMessages.push('O preço do prato é obrigatório');
-                preco.classList.add('is-invalid');
-            } else {
-                preco.classList.remove('is-invalid');
-            }
-
-            // Validar ingredientes
-            const ingredientes = document.querySelectorAll('input[name="ingredientes[]"]');
-            let temIngrediente = false;
-            ingredientes.forEach(ing => {
-                if (ing.value.trim()) {
-                    temIngrediente = true;
-                }
-            });
-            if (!temIngrediente) {
-                isValid = false;
-                errorMessages.push('Adicione pelo menos um ingrediente');
-                document.getElementById('ingredientes_container').classList.add('is-invalid');
-            } else {
-                document.getElementById('ingredientes_container').classList.remove('is-invalid');
-            }
-
-            if (!isValid) {
-                e.preventDefault();
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-danger mt-3';
-                alertDiv.innerHTML = errorMessages.join('<br>');
-                form.insertBefore(alertDiv, form.firstChild);
-
-                // Remover alerta após 5 segundos
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 5000);
-            }
-        });
-    });
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Complementos management
-        const listaComplementos = document.getElementById('lista_complementos');
-        const btnAdicionarComplemento = document.getElementById('adicionar_complemento');
-    
-        function formatarPrecoComplemento(input) {
-            let valor = input.value.replace(/\D/g, '');
-            valor = (parseInt(valor) || 0) / 100;
-            input.value = valor.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-    
-        function criarComplementoItem() {
-            const div = document.createElement('div');
-            div.className = 'complemento-item input-group mb-2';
-            div.innerHTML = `
-                <input type="text" class="form-control" name="complementos[]" placeholder="Nome do complemento">
-                <span class="input-group-text">R$</span>
-                <input type="text" class="form-control preco-complemento" name="precos_complementos[]" placeholder="0,00">
-                <span class="input-group-text">Máx.</span>
-                <input type="number" class="form-control" name="max_escolhas[]" placeholder="1" min="1" style="max-width: 80px;">
-                <button type="button" class="btn btn-outline-danger remover-complemento">
-                    <i class="fas fa-trash"></i>
-                </button>
-            `;
-    
-            const precoInput = div.querySelector('.preco-complemento');
-            precoInput.addEventListener('input', function() {
-                formatarPrecoComplemento(this);
-            });
-    
-            return div;
-        }
-    
-        btnAdicionarComplemento.addEventListener('click', function() {
-            listaComplementos.appendChild(criarComplementoItem());
-        });
-    
-        listaComplementos.addEventListener('click', function(e) {
-            if (e.target.closest('.remover-complemento')) {
-                e.target.closest('.complemento-item').remove();
-            }
-        });
-    
-        // Format existing price inputs
-        document.querySelectorAll('.preco-complemento').forEach(input => {
-            input.addEventListener('input', function() {
-                formatarPrecoComplemento(this);
-            });
-        });
-    });
-    </script>
-    <style>
-        .preco-complemento {
-            max-width: 120px;
-        }
-        
-        .complemento-item {
-            transition: all 0.3s ease;
-        }
-        
-        .complemento-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .remover-complemento {
-            transition: all 0.2s ease;
-        }
-        
-        .remover-complemento:hover {
-            transform: scale(1.1);
-        }
-     
-.preco-complemento {
-    max-width: 120px;
-}
-
-#ingredientes_container.is-invalid {
-    border: 1px solid #dc3545;
-    border-radius: 0.25rem;
-    padding: 0.5rem;
-}
-</style>
+  

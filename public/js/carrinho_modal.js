@@ -1,5 +1,63 @@
+let isModalInitialized = false;
+
+// Observador para mudanças no localStorage
+window.addEventListener('storage', function(e) {
+    if (e.key === 'carrinho') {
+        atualizarBadgeCarrinho();
+    }
+});
+
+// Função para atualizar o badge e o total do carrinho
+function atualizarBadgeCarrinho() {
+    const carrinhoBadge = document.querySelector('.carrinho-badge');
+    const carrinhoInfo = document.querySelector('.carrinho-info');
+    const carrinhoTotal = document.querySelector('.carrinho-total');
+    if (!carrinhoBadge) {
+        console.error('Elemento carrinho-badge não encontrado');
+        return;
+    }
+
+    try {
+        const carrinho = JSON.parse(localStorage.getItem('carrinho')) || { items: [] };
+        const totalItens = carrinho.items.reduce((total, item) => total + (Number(item.quantidade) || 0), 0);
+        const valorTotal = carrinho.items.reduce((total, item) => total + ((Number(item.produto.preco) || 0) * (Number(item.quantidade) || 0)), 0);
+        
+        carrinhoBadge.textContent = totalItens;
+        carrinhoBadge.style.display = totalItens > 0 ? 'block' : 'none';
+
+        if (carrinhoInfo && carrinhoTotal) {
+            if (totalItens > 0) {
+                carrinhoInfo.style.display = 'block';
+                carrinhoTotal.textContent = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+        } else {
+            carrinhoInfo.style.display = 'none';
+        }
+    }
+    } catch (error) {
+        console.error('Erro ao atualizar badge do carrinho:', error);
+        carrinhoBadge.textContent = '0';
+        carrinhoBadge.style.display = 'none';
+        if (carrinhoInfo) {
+            carrinhoInfo.style.display = 'none';
+        }
+    }
+}
+
+// Atualiza o badge do carrinho ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    atualizarBadgeCarrinho();
+});
+
 document.addEventListener('DOMContentLoaded', function () {
+    if (isModalInitialized) {
+        console.log('🔄 Modal já foi inicializado, ignorando...');
+        return;
+    }
+    isModalInitialized = true;
     console.log("🔄 Página carregada: Iniciando script do carrinho");
+
+    // Atualiza o badge do carrinho ao carregar a página
+    atualizarBadgeCarrinho();
 
     const tipoEntregaInputs = document.querySelectorAll('input[name="tipo-entrega"]');
     const enderecoEntrega = document.querySelector('.endereco-entrega');
@@ -91,6 +149,7 @@ console.log(telefone);
             }
 
             const data = await response.json();
+            atualizarBadgeCarrinho(); // Atualiza o badge após finalizar o pedido
             return data;
         } catch (error) {
             console.error('Erro ao enviar pedido:', error);
@@ -99,8 +158,16 @@ console.log(telefone);
     }
 
     // Remove the duplicate event listener and keep only this one
+    let isProcessing = false;
     finalizarPedidoBtn.addEventListener('click', async function () {
+        if (isProcessing) {
+            console.log('🚫 Pedido já está sendo processado...');
+            return;
+        }
+
         try {
+            isProcessing = true;
+            finalizarPedidoBtn.disabled = true;
             console.log("🛒 Botão 'Finalizar Pedido' clicado   em carrinho_modal.js linha 101.");
 
             const carrinho = JSON.parse(localStorage.getItem('carrinho'));
@@ -155,6 +222,9 @@ console.log(telefone);
         } catch (error) {
             console.error('❌ ERRO ao finalizar pedido:', error);
             alert(error.message || 'Erro ao finalizar pedido. Tente novamente.');
+        } finally {
+            isProcessing = false;
+            finalizarPedidoBtn.disabled = false;
         }
     });
 });

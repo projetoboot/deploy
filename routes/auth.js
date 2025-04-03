@@ -1,7 +1,35 @@
-// ... existing imports ...
 const User = require('../models/user');
+const logger = require('../utils/logger');
+const express = require('express');
+const router = express.Router();
 
-// ... existing code ...
+// Rota de login
+router.post('/login', async (req, res) => {
+    try {
+        const { phone, password } = req.body;
+        const user = await User.findOne({ tell: phone });
+
+        if (!user || !user.comparePassword(password)) {
+            return res.status(401).json({ error: 'Credenciais inválidas' });
+        }
+
+        req.session.userId = user.id;
+        await logger.userLogin(user.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Rota de logout
+router.post('/logout', async (req, res) => {
+    if (req.session.userId) {
+        await logger.userLogout(req.session.userId);
+        req.session.destroy();
+    }
+    res.json({ success: true });
+});
 
 // Add this new route
 router.get('/check-phone', async (req, res) => {

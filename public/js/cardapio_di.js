@@ -254,8 +254,7 @@ class CardapioUI {
             const finalizarBtn = modalCarrinho.querySelector('.finalizar-pedido-btn');
 
             closeBtn.addEventListener('click', () => this.fecharModalCarrinho());
-            finalizarBtn.addEventListener('click', () => this.finalizarPedido());
-        }
+                  }
     }
 
     configurarCarrinhoModal() {
